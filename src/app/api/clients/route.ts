@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
+import bcrypt from 'bcryptjs'
 import dbConnect from '@/lib/mongodb'
 import Client from '@/models/Client'
+import User from '@/models/User'
 import { requireRole, isErrorResponse } from '@/lib/auth'
+
+function generatePassword(length = 10): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$'
+  let password = ''
+  for (let i = 0; i < length; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return password
+}
 
 // GET - List clients (superadmin only)
 export async function GET(request: NextRequest) {
@@ -31,7 +42,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ clients, total, page, limit, totalPages: Math.ceil(total / limit) })
 }
 
-// POST - Create client
+// POST - Create client + auto-create admin user with random password
 export async function POST(request: NextRequest) {
   const auth = requireRole(request, ['superadmin'])
   if (isErrorResponse(auth)) return auth
@@ -53,15 +64,43 @@ export async function POST(request: NextRequest) {
   const existing = await Client.findOne({ slug })
   if (existing) return NextResponse.json({ message: 'Client with similar name already exists' }, { status: 409 })
 
+  // Check if email already used
+  const existingUser = await User.findOne({ email: contactEmail.toLowerCase().trim() })
+  if (existingUser) return NextResponse.json({ message: 'Email already registered as a user' }, { status: 409 })
+
+  // Create client
   const client = await Client.create({
     name: name.trim(),
     slug,
-    contactEmail: contactEmail.trim(),
+    contactEmail: contactEmail.trim().toLowerCase(),
     contactPhone: contactPhone?.trim(),
     address: address?.trim(),
     logo,
     createdBy: auth.userId,
   })
 
-  return NextResponse.json({ message: 'Client created', client }, { status: 201 })
+  // Generate random password and create admin user for this client
+  const randomPassword = generatePassword(10)
+  const hashedPassword = await bcrypt.hash(randomPassword, 12)
+
+  await User.create({
+    name: name.trim(),
+    email: contactEmail.trim().toLowerCase(),
+    password: hashedPassword,
+    role: 'admin',
+    clientId: client._id,
+    status: 'active',
+    mustChangePassword: true,
+    createdBy: auth.userId,
+  })
+
+  return NextResponse.json({
+    message: 'Client created successfully',
+    client,
+    credentials: {
+      email: contactEmail.trim().toLowerCase(),
+      password: randomPassword,
+      note: 'Client must change password on first login',
+    }
+  }, { status: 201 })
 }

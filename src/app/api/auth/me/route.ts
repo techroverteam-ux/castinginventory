@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
       clientId: user.clientId?._id,
       clientName: user.clientId?.name,
       clientLogo: user.clientId?.logo,
+      mustChangePassword: user.mustChangePassword || false,
     }
   })
 }

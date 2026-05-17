@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
@@ -52,6 +52,13 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
 
   const userRole: UserRole = user?.role || 'viewer'
   const userName = user?.name || ''
+
+  // Force password change on first login
+  useEffect(() => {
+    if (user?.mustChangePassword && pathname !== '/dashboard/change-password') {
+      router.replace('/dashboard/change-password')
+    }
+  }, [user, pathname, router])
 
   const filteredNav = navigation.filter(item => item.roles.includes(userRole))
   const filteredMobileNav = mobileNav.filter(item => item.roles.includes(userRole))

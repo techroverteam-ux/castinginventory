@@ -11,29 +11,33 @@ interface UserInfo {
   clientId?: string
   clientName?: string
   clientLogo?: string
+  mustChangePassword?: boolean
 }
 
 interface CurrentUserContextValue {
   user: UserInfo | null
   loading: boolean
+  refetch: () => void
 }
 
-const CurrentUserContext = createContext<CurrentUserContextValue>({ user: null, loading: true })
+const CurrentUserContext = createContext<CurrentUserContextValue>({ user: null, loading: true, refetch: () => {} })
 
 export function CurrentUserProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserInfo | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  const fetchUser = () => {
     fetchWithAuth('/api/auth/me')
       .then(res => res.ok ? res.json() : null)
       .then(data => { if (data) setUser(data.user) })
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [])
+  }
+
+  useEffect(() => { fetchUser() }, [])
 
   return (
-    <CurrentUserContext.Provider value={{ user, loading }}>
+    <CurrentUserContext.Provider value={{ user, loading, refetch: fetchUser }}>
       {children}
     </CurrentUserContext.Provider>
   )

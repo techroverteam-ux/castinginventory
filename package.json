@@ -10,6 +10,7 @@
     "seed": "node scripts/createSuperAdmin.js"
   },
   "dependencies": {
+    "@vercel/blob": "^2.3.3",
     "bcryptjs": "^2.4.3",
     "clsx": "^2.1.1",
     "date-fns": "^2.30.0",

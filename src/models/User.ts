@@ -19,6 +19,7 @@ const UserSchema = new mongoose.Schema({
   clientId: { type: mongoose.Schema.Types.ObjectId, ref: 'Client' },
   phone: { type: String, trim: true, maxlength: 20 },
   status: { type: String, enum: ['active', 'inactive'], default: 'active' },
+  mustChangePassword: { type: Boolean, default: false },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 }, { timestamps: true })
 
