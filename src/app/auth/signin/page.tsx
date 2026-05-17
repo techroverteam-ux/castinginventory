@@ -1,7 +1,7 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
-import { Eye, EyeOff, Package, Loader2, ArrowLeft } from 'lucide-react'
+import { Eye, EyeOff, Package, Loader2, ArrowLeft, Moon, Sun } from 'lucide-react'
 
 type Step = 'credentials' | 'otp'
 
@@ -133,7 +133,23 @@ export default function SignIn() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4" style={{ background: '#fff' }}>
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 bg-white dark:bg-[#0d0d0d] transition-colors">
+      {/* Theme toggle */}
+      <div className="fixed top-4 right-4">
+        <button
+          onClick={() => {
+            const html = document.documentElement
+            const isDark = html.classList.contains('dark')
+            html.classList.toggle('dark', !isDark)
+            localStorage.setItem('ci-theme', isDark ? 'light' : 'dark')
+          }}
+          className="p-2 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+        >
+          <Moon className="h-4 w-4 dark:hidden" />
+          <Sun className="h-4 w-4 hidden dark:block" />
+        </button>
+      </div>
+
       {/* Logo */}
       <div className="w-[50px] h-[50px] bg-[#4F46E5] rounded-[14px] flex items-center justify-center mb-6">
         <Package className="h-6 w-6 text-white" />
@@ -141,19 +157,19 @@ export default function SignIn() {
 
       {step === 'credentials' ? (
         <>
-          <h1 className="text-[32px] font-semibold text-[#0d0d0d] mb-2 text-center leading-tight">
+          <h1 className="text-[32px] font-semibold text-[#0d0d0d] dark:text-white mb-2 text-center leading-tight">
             Welcome back
           </h1>
-          <p className="text-[15px] text-[#6e6e80] mb-8 text-center">
+          <p className="text-[15px] text-[#6e6e80] dark:text-gray-400 mb-8 text-center">
             Log in to Casting Inventory
           </p>
 
           <form onSubmit={handleCredentialsSubmit} className="w-full max-w-[340px] space-y-3" noValidate>
             <div>
-              <label className="block text-[13px] font-medium text-[#0d0d0d] mb-1.5">Email address *</label>
+              <label className="block text-[13px] font-medium text-[#0d0d0d] dark:text-gray-200 mb-1.5">Email address *</label>
               <input
                 type="email"
-                className={`w-full h-[52px] px-4 text-[15px] text-[#0d0d0d] bg-white border rounded-md placeholder-[#8e8ea0] focus:outline-none focus:ring-2 focus:ring-[#4F46E5]/20 focus:border-[#4F46E5] transition-all ${errors.email ? 'border-red-500' : 'border-[#c5c5d2]'}`}
+                className={`w-full h-[52px] px-4 text-[15px] text-[#0d0d0d] dark:text-white bg-white dark:bg-gray-800 border rounded-md placeholder-[#8e8ea0] dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#4F46E5]/20 focus:border-[#4F46E5] transition-all ${errors.email ? 'border-red-500' : 'border-[#c5c5d2] dark:border-gray-600'}`}
                 placeholder="you@example.com"
                 value={formData.email}
                 onChange={(e) => { setFormData({ ...formData, email: e.target.value }); if (errors.email) setErrors(prev => ({ ...prev, email: undefined })) }}
@@ -162,11 +178,11 @@ export default function SignIn() {
             </div>
 
             <div>
-              <label className="block text-[13px] font-medium text-[#0d0d0d] mb-1.5">Password *</label>
+              <label className="block text-[13px] font-medium text-[#0d0d0d] dark:text-gray-200 mb-1.5">Password *</label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
-                  className={`w-full h-[52px] px-4 pr-12 text-[15px] text-[#0d0d0d] bg-white border rounded-md placeholder-[#8e8ea0] focus:outline-none focus:ring-2 focus:ring-[#4F46E5]/20 focus:border-[#4F46E5] transition-all ${errors.password ? 'border-red-500' : 'border-[#c5c5d2]'}`}
+                  className={`w-full h-[52px] px-4 pr-12 text-[15px] text-[#0d0d0d] dark:text-white bg-white dark:bg-gray-800 border rounded-md placeholder-[#8e8ea0] dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#4F46E5]/20 focus:border-[#4F46E5] transition-all ${errors.password ? 'border-red-500' : 'border-[#c5c5d2] dark:border-gray-600'}`}
                   placeholder="Enter your password"
                   value={formData.password}
                   onChange={(e) => { setFormData({ ...formData, password: e.target.value }); if (errors.password) setErrors(prev => ({ ...prev, password: undefined })) }}
