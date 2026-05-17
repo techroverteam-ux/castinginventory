@@ -115,7 +115,7 @@ export default function ProductsPage() {
             </div>
             <div>
               <label className="form-label">Name *</label>
-              <input className="form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. 10K Gold" />
+              <input className="form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. 10K, 22K, SILVER, GOLD 916" />
               {formErrors.name && <p className="text-red-500 text-xs mt-1">{formErrors.name}</p>}
             </div>
 

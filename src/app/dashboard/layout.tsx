@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard, Package, Users, Settings, LogOut,
   Menu, X, Moon, Sun, ChevronRight, Building2,
-  BookOpen, UserCheck, ShoppingBag, PanelLeftClose, PanelLeft, MessageSquare,
+  BookOpen, UserCheck, ShoppingBag, PanelLeftClose, PanelLeft, MessageSquare, CreditCard,
 } from 'lucide-react'
 import { useCurrentUser, CurrentUserProvider } from '@/components/CurrentUserProvider'
 import { useTheme } from '@/components/ThemeProvider'
@@ -22,8 +22,8 @@ const navigation: NavItem[] = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['superadmin', 'admin', 'manager', 'viewer'] },
   { name: 'Daily Entry', href: '/dashboard/entries', icon: BookOpen, roles: ['superadmin', 'admin', 'manager'] },
   { name: 'Products', href: '/dashboard/products', icon: ShoppingBag, roles: ['superadmin', 'admin', 'manager'] },
-  { name: 'Parties / Ledger', href: '/dashboard/parties', icon: UserCheck, roles: ['superadmin', 'admin', 'manager', 'viewer'] },
-  { name: 'Day Book', href: '/dashboard/day-book', icon: BookOpen, roles: ['superadmin', 'admin', 'manager', 'viewer'] },
+  { name: 'Parties', href: '/dashboard/parties', icon: UserCheck, roles: ['superadmin', 'admin', 'manager', 'viewer'] },
+  { name: 'Payment Modes', href: '/dashboard/payment-modes', icon: CreditCard, roles: ['superadmin', 'admin'] },
   { name: 'Clients', href: '/dashboard/clients', icon: Building2, roles: ['superadmin'] },
   { name: 'WhatsApp Config', href: '/dashboard/settings', icon: MessageSquare, roles: ['superadmin'] },
   { name: 'User Management', href: '/dashboard/admin', icon: Users, roles: ['superadmin', 'admin'] },
@@ -35,7 +35,7 @@ const mobileNav: NavItem[] = [
   { name: 'Entry', href: '/dashboard/entries', icon: BookOpen, roles: ['superadmin', 'admin', 'manager'] },
   { name: 'Parties', href: '/dashboard/parties', icon: UserCheck, roles: ['superadmin', 'admin', 'manager', 'viewer'] },
   { name: 'Products', href: '/dashboard/products', icon: ShoppingBag, roles: ['superadmin', 'admin', 'manager'] },
-  { name: 'Users', href: '/dashboard/admin', icon: Users, roles: ['superadmin', 'admin'] },
+  { name: 'More', href: '/dashboard/settings', icon: Settings, roles: ['superadmin', 'admin', 'manager', 'viewer'] },
 ]
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

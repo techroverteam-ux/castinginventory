@@ -1,9 +1,10 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
-import { BookOpen, Loader2, Search } from 'lucide-react'
+import { BookOpen, Loader2, Search, FileDown } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { useCurrentUser } from '@/components/CurrentUserProvider'
 import { fetchWithAuth } from '@/lib/fetchWithAuth'
+import { exportToExcel, exportToPDF } from '@/lib/export'
 
 interface PartyItem { _id: string; code: string; name: string }
 interface ProductItem { _id: string; code: number; name: string; rateSlabs: { minQty: number; rate: number }[] }
@@ -54,7 +55,13 @@ export default function EntriesPage() {
   useEffect(() => { fetchMasters() }, [])
   useEffect(() => { fetchEntries() }, [fetchEntries])
 
-  // Code-based lookups
+  // Code-based lookups - type code number, auto-fill name
+  const handlePaymentCode = (code: string) => {
+    setForm(prev => ({ ...prev, paymentModeId: '' }))
+    const mode = modes.find(m => String(m.code) === code)
+    if (mode) setForm(prev => ({ ...prev, paymentModeId: mode._id }))
+  }
+
   const handlePartyCode = (code: string) => {
     setForm(prev => ({ ...prev, partyCode: code }))
     const party = parties.find(p => p.code === code)
@@ -67,14 +74,18 @@ export default function EntriesPage() {
     const product = products.find(p => String(p.code) === code)
     if (product) {
       setForm(prev => ({ ...prev, productId: product._id, productName: product.name }))
-      // Auto-fill rate from slab
-      if (form.pcs && product.rateSlabs?.length) {
-        const qty = Number(form.pcs)
+      // Auto-fill rate from slab based on current pcs
+      const qty = Number(form.pcs) || 1
+      if (product.rateSlabs?.length) {
         const sorted = [...product.rateSlabs].sort((a, b) => b.minQty - a.minQty)
         const slab = sorted.find(s => qty >= s.minQty)
         if (slab) setForm(prev => ({ ...prev, rate: String(slab.rate), amount: String(qty * slab.rate) }))
       }
     } else setForm(prev => ({ ...prev, productId: '', productName: '' }))
+  }
+
+  const handleJobworkerCode = (code: string) => {
+    setForm(prev => ({ ...prev, jobworkerCode: code }))
   }
 
   const handlePcsChange = (pcs: string) => {
@@ -162,11 +173,11 @@ export default function EntriesPage() {
             <input type="date" className="form-input text-xs" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} />
           </div>
           <div>
-            <label className="form-label">Payment Mode *</label>
-            <select className="form-select text-xs" value={form.paymentModeId} onChange={e => setForm({ ...form, paymentModeId: e.target.value })}>
-              <option value="">Select</option>
-              {modes.map(m => <option key={m._id} value={m._id}>{m.code} - {m.name}</option>)}
-            </select>
+            <label className="form-label">Payment Code *</label>
+            <div className="flex gap-1">
+              <input className="form-input text-xs w-14" placeholder="Code" onChange={e => handlePaymentCode(e.target.value)} inputMode="numeric" />
+              <input className="form-input text-xs flex-1 bg-gray-100 dark:bg-gray-700" value={modes.find(m => m._id === form.paymentModeId)?.name || ''} disabled placeholder="Mode" />
+            </div>
             {formErrors.paymentModeId && <p className="text-red-500 text-[10px] mt-0.5">{formErrors.paymentModeId}</p>}
           </div>
           <div>
@@ -215,8 +226,10 @@ export default function EntriesPage() {
             <input type="number" className="form-input text-xs" value={form.creditAmount} onChange={e => setForm({ ...form, creditAmount: e.target.value })} min={0} placeholder="Auto" />
           </div>
           <div>
-            <label className="form-label">Jobworker</label>
-            <input className="form-input text-xs" value={form.jobworkerCode} onChange={e => setForm({ ...form, jobworkerCode: e.target.value })} placeholder="Code" />
+            <label className="form-label">Jobworker Code</label>
+            <div className="flex gap-1">
+              <input className="form-input text-xs w-14" value={form.jobworkerCode} onChange={e => handleJobworkerCode(e.target.value)} placeholder="Code" inputMode="numeric" />
+            </div>
           </div>
           <div className="sm:col-span-2">
             <label className="form-label">Remarks</label>
@@ -239,6 +252,41 @@ export default function EntriesPage() {
           <input type="date" className="form-input text-xs py-1.5 w-36" value={filterFrom} onChange={e => setFilterFrom(e.target.value)} />
           <span className="text-xs text-gray-400">to</span>
           <input type="date" className="form-input text-xs py-1.5 w-36" value={filterTo} onChange={e => setFilterTo(e.target.value)} />
+          <div className="ml-auto flex gap-1.5">
+            <button onClick={() => {
+              const cols = [
+                { header: 'Rec#', key: 'recNo', width: 8 },
+                { header: 'Mode', key: 'mode', width: 10 },
+                { header: 'Party', key: 'party', width: 20 },
+                { header: 'Product', key: 'product', width: 12 },
+                { header: 'Qty', key: 'pcs', width: 6 },
+                { header: 'Rate', key: 'rate', width: 8 },
+                { header: 'Amount', key: 'amount', width: 10 },
+                { header: 'Cash', key: 'cash', width: 8 },
+                { header: 'UPI', key: 'upi', width: 8 },
+                { header: 'Credit', key: 'credit', width: 8 },
+                { header: 'Date', key: 'date', width: 10 },
+              ]
+              const rows = entries.map(e => ({ recNo: e.recNo, mode: e.paymentModeId?.name || '', party: e.partyId?.name || '', product: e.productId?.name || '', pcs: e.pcs, rate: e.rate, amount: e.amount, cash: e.cashAmount || '', upi: e.upiAmount || '', credit: e.creditAmount || '', date: formatDate(e.date) }))
+              exportToExcel({ title: 'Daily Entry Report', clientName: user?.clientName, columns: cols, data: rows, fileName: `entries-${filterFrom}-to-${filterTo}` })
+            }} className="btn-secondary text-[10px] px-2.5 py-1.5 flex items-center gap-1"><FileDown className="h-3 w-3" />Excel</button>
+            <button onClick={() => {
+              const cols = [
+                { header: 'Rec#', key: 'recNo', width: 8 },
+                { header: 'Mode', key: 'mode', width: 10 },
+                { header: 'Party', key: 'party', width: 20 },
+                { header: 'Product', key: 'product', width: 12 },
+                { header: 'Qty', key: 'pcs', width: 6 },
+                { header: 'Rate', key: 'rate', width: 8 },
+                { header: 'Amount', key: 'amount', width: 10 },
+                { header: 'Cash', key: 'cash', width: 8 },
+                { header: 'UPI', key: 'upi', width: 8 },
+                { header: 'Credit', key: 'credit', width: 8 },
+              ]
+              const rows = entries.map(e => ({ recNo: e.recNo, mode: e.paymentModeId?.name || '', party: e.partyId?.name || '', product: e.productId?.name || '', pcs: e.pcs, rate: `₹${e.rate}`, amount: `₹${e.amount}`, cash: e.cashAmount ? `₹${e.cashAmount}` : '', upi: e.upiAmount ? `₹${e.upiAmount}` : '', credit: e.creditAmount ? `₹${e.creditAmount}` : '' }))
+              exportToPDF({ title: 'Daily Entry Report', clientName: user?.clientName, clientLogo: user?.clientLogo, columns: cols, data: rows, fileName: `entries-${filterFrom}-to-${filterTo}` })
+            }} className="btn-secondary text-[10px] px-2.5 py-1.5 flex items-center gap-1"><FileDown className="h-3 w-3" />PDF</button>
+          </div>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full">
