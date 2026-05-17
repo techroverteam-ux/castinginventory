@@ -208,8 +208,21 @@ function UserManagement() {
                 </select>
               </div>
               <div>
-                <label className="form-label">Phone</label>
-                <input className="form-input" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="+91 9876543210" maxLength={16} />
+                <label className="form-label">Phone <span className="normal-case font-normal text-gray-400">(10 digits)</span></label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-gray-500 dark:text-gray-400 font-medium">+91</span>
+                  <input
+                    className="form-input pl-12"
+                    value={form.phone}
+                    onChange={e => handlePhoneChange(e.target.value)}
+                    placeholder="9876543210"
+                    maxLength={10}
+                    inputMode="numeric"
+                  />
+                </div>
+                {form.phone && form.phone.length > 0 && form.phone.length < 10 && (
+                  <p className="text-amber-500 text-xs mt-1">{form.phone.length}/10 digits</p>
+                )}
                 {formErrors.phone && <p className="text-danger text-xs mt-1">{formErrors.phone}</p>}
               </div>
               <div className="flex justify-end gap-3 pt-2">

@@ -60,11 +60,14 @@ export async function POST(request: NextRequest) {
   if (!contactEmail?.trim()) return NextResponse.json({ message: 'Contact email is required' }, { status: 400 })
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) return NextResponse.json({ message: 'Invalid email format' }, { status: 400 })
 
-  // Phone validation
+  // Phone validation (Indian 10-digit)
   if (contactPhone?.trim()) {
-    const digits = contactPhone.trim().replace(/[\s\-\(\)\+]/g, '')
-    if (!/^\d+$/.test(digits) || digits.length < 10 || digits.length > 15) {
-      return NextResponse.json({ message: 'Invalid phone number. Must be 10-15 digits.' }, { status: 400 })
+    const digits = contactPhone.trim().replace(/\D/g, '')
+    if (digits.length !== 10) {
+      return NextResponse.json({ message: 'Phone number must be exactly 10 digits' }, { status: 400 })
+    }
+    if (!/^[6-9]/.test(digits)) {
+      return NextResponse.json({ message: 'Phone must start with 6, 7, 8, or 9' }, { status: 400 })
     }
   }
 
@@ -81,7 +84,7 @@ export async function POST(request: NextRequest) {
     name: name.trim(),
     slug,
     contactEmail: contactEmail.trim().toLowerCase(),
-    contactPhone: contactPhone?.trim(),
+    contactPhone: contactPhone?.trim() ? `+91${contactPhone.trim().replace(/\D/g, '')}` : undefined,
     address: address?.trim(),
     logo,
     favicon,

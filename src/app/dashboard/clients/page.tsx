@@ -60,16 +60,55 @@ function ClientManagement() {
 
   useEffect(() => { fetchClients() }, [fetchClients])
 
+  const validateImageDimensions = (file: File, type: 'logo' | 'favicon'): Promise<boolean> => {
+    return new Promise((resolve) => {
+      // SVG and ICO don't need dimension check
+      if (file.type === 'image/svg+xml' || file.type === 'image/x-icon' || file.type === 'image/vnd.microsoft.icon') {
+        resolve(true)
+        return
+      }
+      const img = new Image()
+      img.onload = () => {
+        URL.revokeObjectURL(img.src)
+        if (type === 'logo') {
+          if (img.width < 120 || img.height < 120) {
+            toast.error(`Logo must be at least 120×120px. Yours is ${img.width}×${img.height}px`)
+            resolve(false)
+          } else { resolve(true) }
+        } else {
+          if (img.width < 32 || img.height < 32) {
+            toast.error(`Favicon must be at least 32×32px. Yours is ${img.width}×${img.height}px`)
+            resolve(false)
+          } else if (img.width > 512 || img.height > 512) {
+            toast.error(`Favicon should not exceed 512×512px. Yours is ${img.width}×${img.height}px`)
+            resolve(false)
+          } else { resolve(true) }
+        }
+      }
+      img.onerror = () => { resolve(true) } // fallback: allow upload
+      img.src = URL.createObjectURL(file)
+    })
+  }
+
   const handleFileUpload = async (file: File, type: 'logo' | 'favicon') => {
-    if (!['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml', 'image/x-icon', 'image/vnd.microsoft.icon'].includes(file.type)) {
-      toast.error('Only JPEG, PNG, WebP, SVG, ICO allowed')
+    const allowedLogo = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml']
+    const allowedFavicon = ['image/png', 'image/svg+xml', 'image/x-icon', 'image/vnd.microsoft.icon']
+    const allowed = type === 'logo' ? allowedLogo : allowedFavicon
+
+    if (!allowed.includes(file.type)) {
+      toast.error(type === 'logo' ? 'Logo: Only JPEG, PNG, WebP, SVG allowed' : 'Favicon: Only PNG, SVG, ICO allowed')
       return
     }
+
     const maxSize = type === 'favicon' ? 1 * 1024 * 1024 : 5 * 1024 * 1024
     if (file.size > maxSize) {
       toast.error(`File must be under ${type === 'favicon' ? '1MB' : '5MB'}`)
       return
     }
+
+    // Validate image dimensions before uploading
+    const validDimensions = await validateImageDimensions(file, type)
+    if (!validDimensions) return
 
     setUploading(type)
     try {
@@ -84,14 +123,33 @@ function ClientManagement() {
     } catch { toast.error('Upload failed') } finally { setUploading(null) }
   }
 
+  const formatPhone = (value: string): string => {
+    // Only allow digits
+    const digits = value.replace(/\D/g, '')
+    // If starts with 91 and has more than 10 digits, strip 91
+    let cleaned = digits
+    if (cleaned.startsWith('91') && cleaned.length > 10) {
+      cleaned = cleaned.slice(2)
+    }
+    // Max 10 digits
+    return cleaned.slice(0, 10)
+  }
+
+  const handlePhoneChange = (value: string) => {
+    const digits = formatPhone(value)
+    setForm(prev => ({ ...prev, contactPhone: digits }))
+  }
+
+  const getDisplayPhone = (): string => {
+    if (!form.contactPhone) return ''
+    return form.contactPhone.length > 0 ? `+91 ${form.contactPhone}` : ''
+  }
+
   const validatePhone = (phone: string): string | undefined => {
     if (!phone.trim()) return undefined
-    const cleaned = phone.trim()
-    if (!/^[\+\d]/.test(cleaned)) return 'Must start with + or digit'
-    const digits = cleaned.replace(/[\s\-\(\)\+]/g, '')
-    if (!/^\d+$/.test(digits)) return 'Contains invalid characters'
-    if (digits.length < 10) return 'Must be at least 10 digits'
-    if (digits.length > 15) return 'Must not exceed 15 digits'
+    const digits = phone.replace(/\D/g, '')
+    if (digits.length !== 10) return 'Phone number must be exactly 10 digits'
+    if (!/^[6-9]/.test(digits)) return 'Phone must start with 6, 7, 8, or 9'
     return undefined
   }
 
@@ -313,8 +371,21 @@ function ClientManagement() {
                 {formErrors.contactEmail && <p className="text-red-500 text-xs mt-1">{formErrors.contactEmail}</p>}
               </div>
               <div>
-                <label className="form-label">Phone</label>
-                <input className="form-input" value={form.contactPhone} onChange={e => setForm({ ...form, contactPhone: e.target.value })} placeholder="+91 9876543210" maxLength={16} />
+                <label className="form-label">Phone <span className="normal-case font-normal text-gray-400">(10 digits, +91 auto-added)</span></label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-gray-500 dark:text-gray-400 font-medium">+91</span>
+                  <input
+                    className="form-input pl-12"
+                    value={form.contactPhone}
+                    onChange={e => handlePhoneChange(e.target.value)}
+                    placeholder="9876543210"
+                    maxLength={10}
+                    inputMode="numeric"
+                  />
+                </div>
+                {form.contactPhone && form.contactPhone.length > 0 && form.contactPhone.length < 10 && (
+                  <p className="text-amber-500 text-xs mt-1">{form.contactPhone.length}/10 digits</p>
+                )}
                 {formErrors.contactPhone && <p className="text-red-500 text-xs mt-1">{formErrors.contactPhone}</p>}
               </div>
               <div>

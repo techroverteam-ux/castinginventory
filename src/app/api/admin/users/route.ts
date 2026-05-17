@@ -56,11 +56,14 @@ export async function POST(request: NextRequest) {
   if (!password || password.length < 6) return NextResponse.json({ message: 'Password must be at least 6 characters' }, { status: 400 })
   if (!['superadmin', 'admin', 'manager', 'viewer'].includes(role)) return NextResponse.json({ message: 'Invalid role' }, { status: 400 })
 
-  // Phone validation
+  // Phone validation (Indian 10-digit)
   if (phone?.trim()) {
-    const digits = phone.trim().replace(/[\s\-\(\)\+]/g, '')
-    if (!/^\d+$/.test(digits) || digits.length < 10 || digits.length > 15) {
-      return NextResponse.json({ message: 'Invalid phone number. Must be 10-15 digits.' }, { status: 400 })
+    const digits = phone.trim().replace(/\D/g, '')
+    if (digits.length !== 10) {
+      return NextResponse.json({ message: 'Phone number must be exactly 10 digits' }, { status: 400 })
+    }
+    if (!/^[6-9]/.test(digits)) {
+      return NextResponse.json({ message: 'Phone must start with 6, 7, 8, or 9' }, { status: 400 })
     }
   }
 
