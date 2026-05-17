@@ -248,7 +248,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
         </header>
 
         <main className="flex-1 relative overflow-y-auto bg-gray-50 dark:bg-gray-900">
-          <div className="p-4 sm:p-5 md:p-6 pb-20 md:pb-6 min-h-full">{children}</div>
+          <div className="p-4 sm:p-5 md:p-6 min-h-full">{children}</div>
         </main>
       </div>
 
