@@ -29,6 +29,8 @@ export async function GET(request: NextRequest) {
   }
   if (partyId) filter.partyId = partyId
   if (productId) filter.productId = productId
+  const paymentModeId = searchParams.get('paymentModeId')
+  if (paymentModeId) filter.paymentModeId = paymentModeId
 
   const [entries, total] = await Promise.all([
     Entry.find(filter)

@@ -7,7 +7,7 @@ import { fetchWithAuth } from '@/lib/fetchWithAuth'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 
 interface RateSlab { minQty: number; rate: number }
-interface ProductItem { _id: string; code: number; name: string; rateSlabs: RateSlab[]; remarks?: string; status: string }
+interface ProductItem { _id: string; code: number; name: string; category: string; rateSlabs: RateSlab[]; remarks?: string; status: string; createdBy?: { name: string }; createdAt: string }
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<ProductItem[]>([])
@@ -16,7 +16,7 @@ export default function ProductsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const { user } = useCurrentUser()
 
-  const [form, setForm] = useState({ name: '', rateSlabs: [{ minQty: 1, rate: 0 }] as RateSlab[], remarks: '' })
+  const [form, setForm] = useState({ name: '', category: 'gold', rateSlabs: [{ minQty: 1, rate: 0 }] as RateSlab[], remarks: '' })
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [confirmModal, setConfirmModal] = useState<{ open: boolean; id: string; name: string }>({ open: false, id: '', name: '' })
   const [deleting, setDeleting] = useState(false)
@@ -32,14 +32,14 @@ export default function ProductsPage() {
   useEffect(() => { fetchProducts() }, [])
 
   const resetForm = () => {
-    setForm({ name: '', rateSlabs: [{ minQty: 1, rate: 0 }], remarks: '' })
+    setForm({ name: '', category: 'gold', rateSlabs: [{ minQty: 1, rate: 0 }], remarks: '' })
     setSelectedId(null)
     setFormErrors({})
   }
 
   const openProduct = (p: ProductItem) => {
     setSelectedId(p._id)
-    setForm({ name: p.name, rateSlabs: p.rateSlabs.length ? p.rateSlabs : [{ minQty: 1, rate: 0 }], remarks: p.remarks || '' })
+    setForm({ name: p.name, category: p.category || 'gold', rateSlabs: p.rateSlabs.length ? p.rateSlabs : [{ minQty: 1, rate: 0 }], remarks: p.remarks || '' })
     setFormErrors({})
   }
 
@@ -117,6 +117,14 @@ export default function ProductsPage() {
               <label className="form-label">Name *</label>
               <input className="form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. 10K, 22K, SILVER, GOLD 916" />
               {formErrors.name && <p className="text-red-500 text-xs mt-1">{formErrors.name}</p>}
+            </div>
+            <div>
+              <label className="form-label">Category *</label>
+              <select className="form-select" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
+                <option value="gold">Gold</option>
+                <option value="silver">Silver</option>
+                <option value="other">Other</option>
+              </select>
             </div>
 
             {/* Dynamic Rate Slabs */}
@@ -196,8 +204,10 @@ export default function ProductsPage() {
                 <tr>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Code</th>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Name</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Category</th>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Rates</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Remarks</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Created By</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Created On</th>
                   <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Actions</th>
                 </tr>
               </thead>
@@ -205,11 +215,11 @@ export default function ProductsPage() {
                 {loading ? (
                   Array.from({ length: 4 }).map((_, i) => (
                     <tr key={i} className="table-row animate-pulse">
-                      {[1,2,3,4,5].map(j => <td key={j} className="table-cell"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16" /></td>)}
+                      {[1,2,3,4,5,6,7].map(j => <td key={j} className="table-cell"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16" /></td>)}
                     </tr>
                   ))
                 ) : products.length === 0 ? (
-                  <tr><td colSpan={5} className="px-4 py-10 text-center text-gray-400">
+                  <tr><td colSpan={7} className="px-4 py-10 text-center text-gray-400">
                     <ShoppingBag className="h-8 w-8 mx-auto mb-2 opacity-40" /><p className="text-sm">No products yet</p>
                   </td></tr>
                 ) : (
@@ -217,6 +227,11 @@ export default function ProductsPage() {
                     <tr key={p._id} onClick={() => openProduct(p)} className={`table-row cursor-pointer ${selectedId === p._id ? 'bg-primary/5 dark:bg-primary/10' : ''}`}>
                       <td className="table-cell font-mono font-semibold">{p.code}</td>
                       <td className="table-cell font-medium text-gray-900 dark:text-white">{p.name}</td>
+                      <td className="table-cell">
+                        <span className={`badge ${p.category === 'gold' ? 'badge-yellow' : p.category === 'silver' ? 'badge-blue' : 'badge-purple'}`}>
+                          {p.category}
+                        </span>
+                      </td>
                       <td className="table-cell text-xs">
                         {p.rateSlabs.map((s, i) => (
                           <span key={i} className="inline-block mr-2">
@@ -224,7 +239,8 @@ export default function ProductsPage() {
                           </span>
                         ))}
                       </td>
-                      <td className="table-cell text-xs text-gray-500">{p.remarks || '—'}</td>
+                      <td className="table-cell text-xs text-gray-500">{p.createdBy?.name || '—'}</td>
+                      <td className="table-cell text-xs text-gray-500">{new Date(p.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
                       <td className="table-cell text-right">
                         <div className="flex items-center justify-end gap-1">
                           <button onClick={(e) => { e.stopPropagation(); openProduct(p) }} className="p-1.5 rounded-lg text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/10 text-xs">Edit</button>

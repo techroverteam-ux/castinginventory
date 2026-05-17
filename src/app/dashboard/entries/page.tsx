@@ -34,6 +34,9 @@ export default function EntriesPage() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
   const [filterFrom, setFilterFrom] = useState(today)
   const [filterTo, setFilterTo] = useState(today)
+  const [filterParty, setFilterParty] = useState('')
+  const [filterProduct, setFilterProduct] = useState('')
+  const [filterMode, setFilterMode] = useState('')
 
   const fetchMasters = async () => {
     const [pRes, prRes, mRes, wRes] = await Promise.all([
@@ -52,10 +55,13 @@ export default function EntriesPage() {
     setLoading(true)
     try {
       const params = new URLSearchParams({ from: filterFrom, to: filterTo, limit: '50' })
+      if (filterParty) params.set('partyId', filterParty)
+      if (filterProduct) params.set('productId', filterProduct)
+      if (filterMode) params.set('paymentModeId', filterMode)
       const res = await fetchWithAuth(`/api/entries?${params}`)
       if (res.ok) { const d = await res.json(); setEntries(d.entries) }
     } catch {} finally { setLoading(false) }
-  }, [filterFrom, filterTo])
+  }, [filterFrom, filterTo, filterParty, filterProduct, filterMode])
 
   useEffect(() => { fetchMasters() }, [])
   useEffect(() => { fetchEntries() }, [fetchEntries])
@@ -259,11 +265,22 @@ export default function EntriesPage() {
 
       {/* Filter & Entry Table */}
       <div className="ci-card overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700/50 flex flex-wrap items-center gap-3">
-          <span className="text-xs font-semibold text-gray-500 uppercase">Filter:</span>
-          <input type="date" className="form-input text-xs py-1.5 w-36" value={filterFrom} onChange={e => setFilterFrom(e.target.value)} />
+        <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700/50 flex flex-wrap items-center gap-2">
+          <input type="date" className="form-input text-xs py-1.5 w-32" value={filterFrom} onChange={e => setFilterFrom(e.target.value)} />
           <span className="text-xs text-gray-400">to</span>
-          <input type="date" className="form-input text-xs py-1.5 w-36" value={filterTo} onChange={e => setFilterTo(e.target.value)} />
+          <input type="date" className="form-input text-xs py-1.5 w-32" value={filterTo} onChange={e => setFilterTo(e.target.value)} />
+          <select className="form-select text-xs py-1.5 w-28" value={filterMode} onChange={e => setFilterMode(e.target.value)}>
+            <option value="">All Modes</option>
+            {modes.map(m => <option key={m._id} value={m._id}>{m.name}</option>)}
+          </select>
+          <select className="form-select text-xs py-1.5 w-36" value={filterParty} onChange={e => setFilterParty(e.target.value)}>
+            <option value="">All Parties</option>
+            {parties.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
+          </select>
+          <select className="form-select text-xs py-1.5 w-28" value={filterProduct} onChange={e => setFilterProduct(e.target.value)}>
+            <option value="">All Products</option>
+            {products.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
+          </select>
           <div className="ml-auto flex gap-1.5">
             <button onClick={() => exportToExcel({ title: 'Daily Entry Report', clientName: user?.clientName, columns: exportCols, data: exportRows, fileName: `entries-${filterFrom}` })} className="btn-secondary text-[10px] px-2.5 py-1.5 flex items-center gap-1"><FileDown className="h-3 w-3" />Excel</button>
             <button onClick={() => exportToPDF({ title: 'Daily Entry Report', clientName: user?.clientName, clientLogo: user?.clientLogo, columns: exportCols, data: exportRows, fileName: `entries-${filterFrom}` })} className="btn-secondary text-[10px] px-2.5 py-1.5 flex items-center gap-1"><FileDown className="h-3 w-3" />PDF</button>
@@ -306,7 +323,7 @@ export default function EntriesPage() {
                     <td className="px-3 py-2.5 text-right">{e.pcs}</td>
                     <td className="px-3 py-2.5 text-right">₹{e.rate.toFixed(2)}</td>
                     <td className="px-3 py-2.5 text-right font-semibold">₹{e.amount.toFixed(2)}</td>
-                    <td className="px-3 py-2.5">{e.jobworkerCode || '—'}</td>
+                    <td className="px-3 py-2.5">{e.jobworkerCode ? (workers.find((_, i) => String(i + 1) === e.jobworkerCode)?.name || e.jobworkerCode) : '—'}</td>
                     <td className="px-3 py-2.5 text-gray-500">{formatDate(e.date)}</td>
                     <td className="px-3 py-2.5 text-gray-500">{e.createdBy?.name || '—'}</td>
                   </tr>

@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: 'Invalid body' }, { status: 400 })
   }
 
-  const { name, rateSlabs, remarks, clientId: bodyClientId } = body
+  const { name, rateSlabs, remarks, category, clientId: bodyClientId } = body
   const clientId = auth.role === 'superadmin' ? bodyClientId : auth.clientId
   if (!clientId) return NextResponse.json({ message: 'Client required' }, { status: 400 })
   if (!name?.trim()) return NextResponse.json({ message: 'Product name required' }, { status: 400 })
@@ -41,6 +41,7 @@ export async function POST(request: NextRequest) {
   const product = await Product.create({
     code,
     name: name.trim(),
+    category: category || 'gold',
     clientId,
     rateSlabs,
     remarks: remarks?.trim(),

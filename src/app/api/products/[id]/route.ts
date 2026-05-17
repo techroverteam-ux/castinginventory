@@ -19,8 +19,9 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     return NextResponse.json({ message: 'Invalid body' }, { status: 400 })
   }
 
-  const { name, rateSlabs, remarks, status } = body
+  const { name, rateSlabs, remarks, status, category } = body
   if (name?.trim()) product.name = name.trim()
+  if (category && ['gold', 'silver', 'other'].includes(category)) product.category = category
   if (rateSlabs && Array.isArray(rateSlabs)) product.rateSlabs = rateSlabs
   if (remarks !== undefined) product.remarks = remarks?.trim() || ''
   if (status && ['active', 'inactive'].includes(status)) product.status = status

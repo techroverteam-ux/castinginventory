@@ -10,6 +10,7 @@ const RateSlabSchema = new mongoose.Schema({
 const ProductSchema = new mongoose.Schema({
   code: { type: Number, required: true },
   name: { type: String, required: true, trim: true, maxlength: 100 },
+  category: { type: String, enum: ['gold', 'silver', 'other'], default: 'gold' },
   clientId: { type: mongoose.Schema.Types.ObjectId, ref: 'Client', required: true },
   rateSlabs: { type: [RateSlabSchema], default: [{ minQty: 1, rate: 0 }] },
   remarks: { type: String, trim: true, maxlength: 500 },
