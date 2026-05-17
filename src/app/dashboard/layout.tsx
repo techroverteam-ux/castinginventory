@@ -5,10 +5,11 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard, Package, Users, Settings, LogOut,
   Menu, X, Moon, Sun, ChevronRight, Building2,
-  BookOpen, UserCheck, ShoppingBag, PanelLeftClose, PanelLeft, MessageSquare, CreditCard,
+  BookOpen, UserCheck, ShoppingBag, PanelLeftClose, PanelLeft, MessageSquare, CreditCard, FileText,
 } from 'lucide-react'
 import { useCurrentUser, CurrentUserProvider } from '@/components/CurrentUserProvider'
 import { useTheme } from '@/components/ThemeProvider'
+import { DynamicFavicon } from '@/components/DynamicFavicon'
 import { UserRole } from '@/types'
 
 interface NavItem {
@@ -23,6 +24,7 @@ const navigation: NavItem[] = [
   { name: 'Daily Entry', href: '/dashboard/entries', icon: BookOpen, roles: ['superadmin', 'admin', 'manager'] },
   { name: 'Products', href: '/dashboard/products', icon: ShoppingBag, roles: ['superadmin', 'admin', 'manager'] },
   { name: 'Parties', href: '/dashboard/parties', icon: UserCheck, roles: ['superadmin', 'admin', 'manager', 'viewer'] },
+  { name: 'Party Ledger', href: '/dashboard/party-ledger', icon: FileText, roles: ['superadmin', 'admin', 'manager', 'viewer'] },
   { name: 'Payment Modes', href: '/dashboard/payment-modes', icon: CreditCard, roles: ['superadmin', 'admin'] },
   { name: 'Clients', href: '/dashboard/clients', icon: Building2, roles: ['superadmin'] },
   { name: 'WhatsApp Config', href: '/dashboard/settings', icon: MessageSquare, roles: ['superadmin'] },
@@ -41,6 +43,7 @@ const mobileNav: NavItem[] = [
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <CurrentUserProvider>
+      <DynamicFavicon />
       <DashboardShell>{children}</DashboardShell>
     </CurrentUserProvider>
   )

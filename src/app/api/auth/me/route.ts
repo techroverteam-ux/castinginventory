@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   if (isErrorResponse(auth)) return auth
 
   await dbConnect()
-  const user = await User.findById(auth.userId).populate('clientId', 'name logo slug')
+  const user = await User.findById(auth.userId).populate('clientId', 'name logo favicon slug')
   if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
   return NextResponse.json({
@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
       clientId: user.clientId?._id,
       clientName: user.clientId?.name,
       clientLogo: user.clientId?.logo,
+      clientFavicon: user.clientId?.favicon,
       mustChangePassword: user.mustChangePassword || false,
     }
   })
