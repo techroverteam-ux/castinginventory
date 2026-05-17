@@ -11,9 +11,9 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File
     if (!file) return NextResponse.json({ message: 'No file provided' }, { status: 400 })
 
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml']
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml', 'image/x-icon', 'image/vnd.microsoft.icon']
     if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json({ message: 'Only JPEG, PNG, WebP, SVG allowed' }, { status: 400 })
+      return NextResponse.json({ message: 'Only JPEG, PNG, WebP, SVG, ICO allowed' }, { status: 400 })
     }
     if (file.size > 5 * 1024 * 1024) {
       return NextResponse.json({ message: 'File must be under 5MB' }, { status: 400 })

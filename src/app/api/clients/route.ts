@@ -54,11 +54,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: 'Invalid request body' }, { status: 400 })
   }
 
-  const { name, contactEmail, contactPhone, address, logo } = body
+  const { name, contactEmail, contactPhone, address, logo, favicon } = body
 
   if (!name?.trim()) return NextResponse.json({ message: 'Client name is required' }, { status: 400 })
   if (!contactEmail?.trim()) return NextResponse.json({ message: 'Contact email is required' }, { status: 400 })
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) return NextResponse.json({ message: 'Invalid email format' }, { status: 400 })
+
+  // Phone validation
+  if (contactPhone?.trim()) {
+    const digits = contactPhone.trim().replace(/[\s\-\(\)\+]/g, '')
+    if (!/^\d+$/.test(digits) || digits.length < 10 || digits.length > 15) {
+      return NextResponse.json({ message: 'Invalid phone number. Must be 10-15 digits.' }, { status: 400 })
+    }
+  }
 
   const slug = name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
   const existing = await Client.findOne({ slug })
@@ -76,6 +84,7 @@ export async function POST(request: NextRequest) {
     contactPhone: contactPhone?.trim(),
     address: address?.trim(),
     logo,
+    favicon,
     createdBy: auth.userId,
   })
 

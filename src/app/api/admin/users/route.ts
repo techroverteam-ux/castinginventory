@@ -56,6 +56,14 @@ export async function POST(request: NextRequest) {
   if (!password || password.length < 6) return NextResponse.json({ message: 'Password must be at least 6 characters' }, { status: 400 })
   if (!['superadmin', 'admin', 'manager', 'viewer'].includes(role)) return NextResponse.json({ message: 'Invalid role' }, { status: 400 })
 
+  // Phone validation
+  if (phone?.trim()) {
+    const digits = phone.trim().replace(/[\s\-\(\)\+]/g, '')
+    if (!/^\d+$/.test(digits) || digits.length < 10 || digits.length > 15) {
+      return NextResponse.json({ message: 'Invalid phone number. Must be 10-15 digits.' }, { status: 400 })
+    }
+  }
+
   // Only superadmin can create superadmin/admin roles
   if (['superadmin', 'admin'].includes(role) && auth.role !== 'superadmin') {
     return NextResponse.json({ message: 'Insufficient permissions' }, { status: 403 })

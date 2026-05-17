@@ -48,12 +48,25 @@ function UserManagement() {
 
   useEffect(() => { fetchUsers() }, [fetchUsers])
 
+  const validatePhone = (phone: string): string | undefined => {
+    if (!phone.trim()) return undefined
+    const cleaned = phone.trim()
+    if (!/^[\+\d]/.test(cleaned)) return 'Must start with + or digit'
+    const digits = cleaned.replace(/[\s\-\(\)\+]/g, '')
+    if (!/^\d+$/.test(digits)) return 'Contains invalid characters'
+    if (digits.length < 10) return 'Must be at least 10 digits'
+    if (digits.length > 15) return 'Must not exceed 15 digits'
+    return undefined
+  }
+
   const validateForm = () => {
     const e: Record<string, string> = {}
     if (!form.name.trim()) e.name = 'Required'
     if (!form.email.trim()) e.email = 'Required'
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Invalid email'
     if (!form.password || form.password.length < 6) e.password = 'Min 6 characters'
+    const phoneErr = validatePhone(form.phone)
+    if (phoneErr) e.phone = phoneErr
     setFormErrors(e)
     return !Object.keys(e).length
   }
@@ -196,7 +209,8 @@ function UserManagement() {
               </div>
               <div>
                 <label className="form-label">Phone</label>
-                <input className="form-input" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="+91 9876543210" />
+                <input className="form-input" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="+91 9876543210" maxLength={16} />
+                {formErrors.phone && <p className="text-danger text-xs mt-1">{formErrors.phone}</p>}
               </div>
               <div className="flex justify-end gap-3 pt-2">
                 <button type="button" onClick={() => setShowModal(false)} className="btn-secondary">Cancel</button>
