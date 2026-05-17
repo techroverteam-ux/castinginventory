@@ -92,16 +92,18 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
         {user?.clientLogo ? (
           <Image src={user.clientLogo} alt="Logo" width={36} height={36} className="rounded-xl flex-shrink-0" />
         ) : (
-          <div className="w-9 h-9 bg-brand-gradient rounded-xl flex items-center justify-center shadow-brand flex-shrink-0">
-            <Package className="h-4 w-4 text-white" />
-          </div>
+          <>
+            <div className="w-9 h-9 bg-brand-gradient rounded-xl flex items-center justify-center shadow-brand flex-shrink-0">
+              <Package className="h-4 w-4 text-white" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-base font-bold text-gray-900 dark:text-white tracking-tight leading-none">
+                Casting Inventory
+              </h1>
+              <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5 truncate">Inventory Management</p>
+            </div>
+          </>
         )}
-        <div className="min-w-0">
-          <h1 className="text-base font-bold text-gray-900 dark:text-white tracking-tight leading-none">
-            {user?.clientName || 'Casting Inventory'}
-          </h1>
-          <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5 truncate">Inventory Management</p>
-        </div>
       </div>
 
       {/* User pill */}

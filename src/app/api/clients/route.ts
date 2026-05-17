@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
   }
 
   const [clients, total] = await Promise.all([
-    Client.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit),
+    Client.find(filter).populate('createdBy', 'name').sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit),
     Client.countDocuments(filter),
   ])
 

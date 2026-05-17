@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Search, Users, X, Loader2 } from 'lucide-react'
+import { Plus, Search, Users, X, Loader2, Power, Trash2, Pencil } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { RoleGuard } from '@/components/RoleGuard'
 import { useCurrentUser } from '@/components/CurrentUserProvider'
@@ -11,6 +11,7 @@ interface UserItem {
   name: string
   email: string
   role: string
+  phone?: string
   status: string
   clientId?: { _id: string; name: string }
   createdAt: string
@@ -32,6 +33,8 @@ function UserManagement() {
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [toggling, setToggling] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState<string | null>(null)
   const { user } = useCurrentUser()
 
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'viewer', phone: '' })
@@ -48,15 +51,9 @@ function UserManagement() {
 
   useEffect(() => { fetchUsers() }, [fetchUsers])
 
-  const validatePhone = (phone: string): string | undefined => {
-    if (!phone.trim()) return undefined
-    const cleaned = phone.trim()
-    if (!/^[\+\d]/.test(cleaned)) return 'Must start with + or digit'
-    const digits = cleaned.replace(/[\s\-\(\)\+]/g, '')
-    if (!/^\d+$/.test(digits)) return 'Contains invalid characters'
-    if (digits.length < 10) return 'Must be at least 10 digits'
-    if (digits.length > 15) return 'Must not exceed 15 digits'
-    return undefined
+  const handlePhoneChange = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 10)
+    setForm(prev => ({ ...prev, phone: digits }))
   }
 
   const validateForm = () => {
@@ -65,8 +62,10 @@ function UserManagement() {
     if (!form.email.trim()) e.email = 'Required'
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Invalid email'
     if (!form.password || form.password.length < 6) e.password = 'Min 6 characters'
-    const phoneErr = validatePhone(form.phone)
-    if (phoneErr) e.phone = phoneErr
+    if (form.phone) {
+      if (form.phone.length !== 10) e.phone = 'Must be exactly 10 digits'
+      else if (!/^[6-9]/.test(form.phone)) e.phone = 'Must start with 6, 7, 8, or 9'
+    }
     setFormErrors(e)
     return !Object.keys(e).length
   }
@@ -82,15 +81,51 @@ function UserManagement() {
         toast.success('User created')
         setShowModal(false)
         setForm({ name: '', email: '', password: '', role: 'viewer', phone: '' })
+        setFormErrors({})
         fetchUsers()
       } else { toast.error(data.message || 'Failed') }
     } catch { toast.error('Something went wrong') } finally { setSaving(false) }
+  }
+
+  const toggleUserStatus = async (userId: string, currentStatus: string) => {
+    setToggling(userId)
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active'
+    try {
+      const res = await fetchWithAuth(`/api/admin/users/${userId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: newStatus }),
+      })
+      if (res.ok) {
+        toast.success(`User ${newStatus === 'active' ? 'activated' : 'deactivated'}`)
+        fetchUsers()
+      } else {
+        const data = await res.json()
+        toast.error(data.message || 'Failed')
+      }
+    } catch { toast.error('Something went wrong') } finally { setToggling(null) }
+  }
+
+  const deleteUser = async (userId: string, userName: string) => {
+    if (!confirm(`Are you sure you want to delete "${userName}"? This cannot be undone.`)) return
+    setDeleting(userId)
+    try {
+      const res = await fetchWithAuth(`/api/admin/users/${userId}`, { method: 'DELETE' })
+      if (res.ok) {
+        toast.success('User deleted')
+        fetchUsers()
+      } else {
+        const data = await res.json()
+        toast.error(data.message || 'Failed')
+      }
+    } catch { toast.error('Something went wrong') } finally { setDeleting(null) }
   }
 
   const roleBadge = (role: string) => {
     const map: Record<string, string> = { superadmin: 'badge-purple', admin: 'badge-yellow', manager: 'badge-blue', viewer: 'badge-green' }
     return map[role] || 'badge-blue'
   }
+
+  const formatDate = (date: string) => new Date(date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
 
   const totalPages = Math.ceil(total / 10)
 
@@ -110,13 +145,7 @@ function UserManagement() {
       <div className="ci-card p-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search users..."
-            className="form-input pl-10"
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1) }}
-          />
+          <input type="text" placeholder="Search users..." className="form-input pl-10" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} />
         </div>
       </div>
 
@@ -129,33 +158,58 @@ function UserManagement() {
                 <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Name</th>
                 <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Email</th>
                 <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Role</th>
-                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Client</th>
                 <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Status</th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Created</th>
+                <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="table-row animate-pulse">
-                    {Array.from({ length: 5 }).map((_, j) => (
+                    {Array.from({ length: 6 }).map((_, j) => (
                       <td key={j} className="table-cell"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20" /></td>
                     ))}
                   </tr>
                 ))
               ) : users.length === 0 ? (
-                <tr><td colSpan={5} className="px-4 py-12 text-center text-gray-400">
+                <tr><td colSpan={6} className="px-4 py-12 text-center text-gray-400">
                   <Users className="h-10 w-10 mx-auto mb-2 opacity-40" />
                   <p className="text-sm">No users found</p>
                 </td></tr>
               ) : (
                 users.map((u) => (
-                  <tr key={u._id} className="table-row">
+                  <tr key={u._id} className={`table-row ${u.status === 'inactive' ? 'opacity-50' : ''}`}>
                     <td className="table-cell font-medium text-gray-900 dark:text-white">{u.name}</td>
-                    <td className="table-cell">{u.email}</td>
+                    <td className="table-cell text-xs">{u.email}</td>
                     <td className="table-cell"><span className={`badge ${roleBadge(u.role)}`}>{u.role}</span></td>
-                    <td className="table-cell">{u.clientId?.name || '—'}</td>
                     <td className="table-cell">
                       <span className={`badge ${u.status === 'active' ? 'badge-green' : 'badge-red'}`}>{u.status}</span>
+                    </td>
+                    <td className="table-cell text-xs text-gray-500">{formatDate(u.createdAt)}</td>
+                    <td className="table-cell">
+                      <div className="flex items-center justify-end gap-1">
+                        {/* Toggle Status */}
+                        <button
+                          onClick={() => toggleUserStatus(u._id, u.status)}
+                          disabled={toggling === u._id || u._id === user?.id}
+                          title={u.status === 'active' ? 'Deactivate' : 'Activate'}
+                          className={`p-1.5 rounded-lg transition-colors disabled:opacity-30 ${
+                            u.status === 'active' ? 'text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/10' : 'text-green-600 hover:bg-green-50 dark:hover:bg-green-900/10'
+                          }`}
+                        >
+                          {toggling === u._id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Power className="h-3.5 w-3.5" />}
+                        </button>
+                        {/* Delete */}
+                        <button
+                          onClick={() => deleteUser(u._id, u.name)}
+                          disabled={deleting === u._id || u._id === user?.id || u.role === 'superadmin'}
+                          title="Delete"
+                          className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors disabled:opacity-30"
+                        >
+                          {deleting === u._id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -186,17 +240,17 @@ function UserManagement() {
               <div>
                 <label className="form-label">Full Name *</label>
                 <input className="form-input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="John Doe" />
-                {formErrors.name && <p className="text-danger text-xs mt-1">{formErrors.name}</p>}
+                {formErrors.name && <p className="text-red-500 text-xs mt-1">{formErrors.name}</p>}
               </div>
               <div>
                 <label className="form-label">Email *</label>
                 <input type="email" className="form-input" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="john@company.com" />
-                {formErrors.email && <p className="text-danger text-xs mt-1">{formErrors.email}</p>}
+                {formErrors.email && <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>}
               </div>
               <div>
                 <label className="form-label">Password *</label>
                 <input type="password" className="form-input" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder="Min 6 characters" />
-                {formErrors.password && <p className="text-danger text-xs mt-1">{formErrors.password}</p>}
+                {formErrors.password && <p className="text-red-500 text-xs mt-1">{formErrors.password}</p>}
               </div>
               <div>
                 <label className="form-label">Role *</label>
@@ -223,10 +277,10 @@ function UserManagement() {
                 {form.phone && form.phone.length > 0 && form.phone.length < 10 && (
                   <p className="text-amber-500 text-xs mt-1">{form.phone.length}/10 digits</p>
                 )}
-                {formErrors.phone && <p className="text-danger text-xs mt-1">{formErrors.phone}</p>}
+                {formErrors.phone && <p className="text-red-500 text-xs mt-1">{formErrors.phone}</p>}
               </div>
               <div className="flex justify-end gap-3 pt-2">
-                <button type="button" onClick={() => setShowModal(false)} className="btn-secondary">Cancel</button>
+                <button type="button" onClick={() => { setShowModal(false); setFormErrors({}) }} className="btn-secondary">Cancel</button>
                 <button type="submit" disabled={saving} className="ci-button flex items-center gap-2">
                   {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                   {saving ? 'Creating...' : 'Create User'}
