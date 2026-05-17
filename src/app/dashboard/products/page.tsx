@@ -198,17 +198,18 @@ export default function ProductsPage() {
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Name</th>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Rates</th>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Remarks</th>
+                  <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   Array.from({ length: 4 }).map((_, i) => (
                     <tr key={i} className="table-row animate-pulse">
-                      {[1,2,3,4].map(j => <td key={j} className="table-cell"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16" /></td>)}
+                      {[1,2,3,4,5].map(j => <td key={j} className="table-cell"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16" /></td>)}
                     </tr>
                   ))
                 ) : products.length === 0 ? (
-                  <tr><td colSpan={4} className="px-4 py-10 text-center text-gray-400">
+                  <tr><td colSpan={5} className="px-4 py-10 text-center text-gray-400">
                     <ShoppingBag className="h-8 w-8 mx-auto mb-2 opacity-40" /><p className="text-sm">No products yet</p>
                   </td></tr>
                 ) : (
@@ -224,6 +225,12 @@ export default function ProductsPage() {
                         ))}
                       </td>
                       <td className="table-cell text-xs text-gray-500">{p.remarks || '—'}</td>
+                      <td className="table-cell text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <button onClick={(e) => { e.stopPropagation(); openProduct(p) }} className="p-1.5 rounded-lg text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/10 text-xs">Edit</button>
+                          <button onClick={(e) => { e.stopPropagation(); setConfirmModal({ open: true, id: p._id, name: p.name }) }} className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 text-xs">Del</button>
+                        </div>
+                      </td>
                     </tr>
                   ))
                 )}

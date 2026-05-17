@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   const clientId = auth.role === 'superadmin' ? searchParams.get('clientId') : auth.clientId
   if (!clientId) return NextResponse.json({ message: 'Client required' }, { status: 400 })
 
-  const modes = await PaymentMode.find({ clientId, status: 'active' }).sort({ code: 1 })
+  const modes = await PaymentMode.find({ clientId, status: 'active' }).populate('createdBy', 'name').sort({ code: 1 })
   return NextResponse.json({ modes })
 }
 

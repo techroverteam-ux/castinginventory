@@ -6,7 +6,7 @@ import { useCurrentUser } from '@/components/CurrentUserProvider'
 import { fetchWithAuth } from '@/lib/fetchWithAuth'
 import { ConfirmModal } from '@/components/ui/ConfirmModal'
 
-interface ModeItem { _id: string; code: number; name: string; status: string }
+interface ModeItem { _id: string; code: number; name: string; status: string; createdBy?: { name: string }; createdAt: string }
 
 export default function PaymentModesPage() {
   const [modes, setModes] = useState<ModeItem[]>([])
@@ -63,6 +63,8 @@ export default function PaymentModesPage() {
                 <tr>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Code</th>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Name</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Created By</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Created On</th>
                   <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Status</th>
                 </tr>
               </thead>
@@ -70,11 +72,11 @@ export default function PaymentModesPage() {
                 {loading ? (
                   Array.from({ length: 3 }).map((_, i) => (
                     <tr key={i} className="table-row animate-pulse">
-                      {[1,2,3].map(j => <td key={j} className="table-cell"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16" /></td>)}
+                      {[1,2,3,4,5].map(j => <td key={j} className="table-cell"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16" /></td>)}
                     </tr>
                   ))
                 ) : modes.length === 0 ? (
-                  <tr><td colSpan={3} className="px-4 py-10 text-center text-gray-400">
+                  <tr><td colSpan={5} className="px-4 py-10 text-center text-gray-400">
                     <CreditCard className="h-8 w-8 mx-auto mb-2 opacity-40" /><p className="text-xs">No payment modes yet. Add CASH, UPI, CREDIT to get started.</p>
                   </td></tr>
                 ) : (
@@ -82,6 +84,8 @@ export default function PaymentModesPage() {
                     <tr key={m._id} className="table-row">
                       <td className="table-cell font-mono font-semibold">{m.code}</td>
                       <td className="table-cell font-medium text-gray-900 dark:text-white">{m.name}</td>
+                      <td className="table-cell text-xs text-gray-500">{m.createdBy?.name || '—'}</td>
+                      <td className="table-cell text-xs text-gray-500">{new Date(m.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
                       <td className="table-cell"><span className="badge badge-green">active</span></td>
                     </tr>
                   ))
