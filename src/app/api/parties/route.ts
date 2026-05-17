@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import dbConnect from '@/lib/mongodb'
 import Party from '@/models/Party'
+import Client from '@/models/Client'
 import { requireRole, isErrorResponse } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {

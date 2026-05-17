@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import dbConnect from '@/lib/mongodb'
 import Product from '@/models/Product'
+import Client from '@/models/Client'
+import User from '@/models/User'
 import { requireRole, isErrorResponse } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {

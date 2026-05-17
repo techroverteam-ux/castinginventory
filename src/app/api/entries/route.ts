@@ -3,6 +3,9 @@ import dbConnect from '@/lib/mongodb'
 import Entry from '@/models/Entry'
 import Party from '@/models/Party'
 import Product from '@/models/Product'
+import PaymentMode from '@/models/PaymentMode'
+import Client from '@/models/Client'
+import User from '@/models/User'
 import { requireRole, isErrorResponse } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
