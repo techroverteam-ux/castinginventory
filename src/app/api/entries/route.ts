@@ -11,8 +11,8 @@ export async function GET(request: NextRequest) {
   await dbConnect()
 
   const { searchParams } = new URL(request.url)
-  const clientId = auth.role === 'superadmin' ? searchParams.get('clientId') : auth.clientId
-  if (!clientId) return NextResponse.json({ message: 'Client required' }, { status: 400 })
+  const clientId = auth.role === 'superadmin' ? (searchParams.get('clientId') || null) : auth.clientId
+  if (!clientId) return NextResponse.json({ message: 'Select a client' }, { status: 400 })
 
   const page = parseInt(searchParams.get('page') || '1')
   const limit = parseInt(searchParams.get('limit') || '20')

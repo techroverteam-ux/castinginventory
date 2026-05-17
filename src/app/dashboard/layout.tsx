@@ -10,6 +10,7 @@ import {
 import { useCurrentUser, CurrentUserProvider } from '@/components/CurrentUserProvider'
 import { useTheme } from '@/components/ThemeProvider'
 import { DynamicFavicon } from '@/components/DynamicFavicon'
+import { ClientSelectorProvider, useClientSelector } from '@/components/ClientSelectorProvider'
 import { UserRole } from '@/types'
 
 interface NavItem {
@@ -43,9 +44,25 @@ const mobileNav: NavItem[] = [
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <CurrentUserProvider>
-      <DynamicFavicon />
-      <DashboardShell>{children}</DashboardShell>
+      <ClientSelectorProvider>
+        <DynamicFavicon />
+        <DashboardShell>{children}</DashboardShell>
+      </ClientSelectorProvider>
     </CurrentUserProvider>
+  )
+}
+
+function ClientDropdown() {
+  const { selectedClientId, setSelectedClientId, clients, isSuperadmin } = useClientSelector()
+  if (!isSuperadmin || clients.length === 0) return null
+  return (
+    <select
+      className="form-select text-xs py-1.5 w-40 bg-gray-100 dark:bg-gray-700 border-0"
+      value={selectedClientId}
+      onChange={e => setSelectedClientId(e.target.value)}
+    >
+      {clients.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
+    </select>
   )
 }
 
@@ -207,6 +224,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
+            <ClientDropdown />
             <button onClick={toggleTheme} className="p-2 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors" aria-label="Toggle theme">
               {theme === 'light' ? <Moon className="h-4 w-4 text-gray-600" /> : <Sun className="h-4 w-4 text-gray-300" />}
             </button>
