@@ -92,7 +92,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
     const Icon = item.icon
     const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href))
     return (
-      <Link href={item.href} onClick={onClick} className={`nav-item ${isActive ? 'nav-item-active' : 'nav-item-inactive'}`} title={collapsed ? item.name : undefined}>
+      <Link href={item.href} onClick={onClick} className={`nav-item ${collapsed ? 'justify-center' : ''} ${isActive ? 'nav-item-active' : 'nav-item-inactive'}`} title={collapsed ? item.name : undefined}>
         <Icon className={`${collapsed ? '' : 'mr-3'} h-[18px] w-[18px] flex-shrink-0 ${isActive ? 'text-primary' : 'opacity-60'}`} />
         {!collapsed && <span className="truncate">{item.name}</span>}
         {!collapsed && isActive && <ChevronRight className="ml-auto h-3.5 w-3.5 text-primary/60 flex-shrink-0" />}

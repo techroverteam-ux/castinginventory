@@ -10,37 +10,64 @@ export async function GET(request: NextRequest) {
   if (isErrorResponse(auth)) return auth
   await dbConnect()
 
-  const clientFilter: any = { status: 'active' }
+  const { searchParams } = new URL(request.url)
+  const period = searchParams.get('period') || 'today'
+  const customFrom = searchParams.get('from')
+  const customTo = searchParams.get('to')
+
+  const clientFilter: any = {}
   if (auth.role !== 'superadmin') clientFilter.clientId = auth.clientId
 
-  const entryFilter: any = { status: 'active' }
-  if (auth.role !== 'superadmin') entryFilter.clientId = auth.clientId
+  // Calculate date range
+  const now = new Date()
+  let startDate: Date, endDate: Date
 
-  // Today's date range
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const tomorrow = new Date(today)
-  tomorrow.setDate(tomorrow.getDate() + 1)
+  if (period === 'today') {
+    startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    endDate = new Date(startDate)
+    endDate.setDate(endDate.getDate() + 1)
+  } else if (period === 'week') {
+    const day = now.getDay()
+    startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (day === 0 ? 6 : day - 1))
+    endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+  } else if (period === 'month') {
+    startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+    endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+  } else {
+    startDate = customFrom ? new Date(customFrom) : new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    endDate = customTo ? new Date(customTo + 'T23:59:59') : new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+  }
 
-  const todayFilter = { ...entryFilter, date: { $gte: today, $lt: tomorrow } }
+  const entryFilter: any = { ...clientFilter, status: 'active', date: { $gte: startDate, $lt: endDate } }
 
-  const [todayEntries, todayAmountAgg, totalEntries, totalAmountAgg, totalParties, totalProducts, recentEntries] = await Promise.all([
-    Entry.countDocuments(todayFilter),
-    Entry.aggregate([{ $match: todayFilter }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+  const [periodEntries, periodAmountAgg, paymentWise, totalParties, totalProducts, recentEntries] = await Promise.all([
     Entry.countDocuments(entryFilter),
     Entry.aggregate([{ $match: entryFilter }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
-    Party.countDocuments({ ...(auth.role !== 'superadmin' ? { clientId: auth.clientId } : {}), status: 'active' }),
-    Product.countDocuments({ ...(auth.role !== 'superadmin' ? { clientId: auth.clientId } : {}), status: 'active' }),
-    Entry.find(entryFilter).populate('partyId', 'name').populate('productId', 'name').sort({ createdAt: -1 }).limit(5),
+    Entry.aggregate([
+      { $match: entryFilter },
+      { $lookup: { from: 'cast_payment_modes', localField: 'paymentModeId', foreignField: '_id', as: 'mode' } },
+      { $unwind: { path: '$mode', preserveNullAndEmptyArrays: true } },
+      { $group: { _id: '$mode.name', amount: { $sum: '$amount' }, count: { $sum: 1 } } },
+      { $sort: { amount: -1 } },
+    ]),
+    Party.countDocuments({ ...clientFilter, status: 'active' }),
+    Product.countDocuments({ ...clientFilter, status: 'active' }),
+    Entry.find({ ...clientFilter, status: 'active' })
+      .populate('partyId', 'name')
+      .populate('productId', 'name')
+      .populate('paymentModeId', 'name')
+      .sort({ createdAt: -1 })
+      .limit(5),
   ])
 
   return NextResponse.json({
-    todayEntries,
-    todayAmount: todayAmountAgg[0]?.total || 0,
-    totalEntries,
-    totalAmount: totalAmountAgg[0]?.total || 0,
+    periodEntries,
+    periodAmount: periodAmountAgg[0]?.total || 0,
+    todayEntries: periodEntries,
+    todayAmount: periodAmountAgg[0]?.total || 0,
     totalParties,
     totalProducts,
+    paymentWise: paymentWise.map(p => ({ mode: p._id || 'Unknown', amount: p.amount, count: p.count })),
     recentEntries,
   })
 }
