@@ -4,6 +4,7 @@ import { Plus, Search, Building2, X, Loader2, Upload, Copy, Check, Power } from 
 import { toast } from 'react-hot-toast'
 import { RoleGuard } from '@/components/RoleGuard'
 import { fetchWithAuth } from '@/lib/fetchWithAuth'
+import { ConfirmModal } from '@/components/ui/ConfirmModal'
 
 interface ClientItem {
   _id: string
@@ -43,6 +44,11 @@ function ClientManagement() {
   const [uploading, setUploading] = useState<'logo' | 'favicon' | null>(null)
   const [copied, setCopied] = useState(false)
   const [toggling, setToggling] = useState<string | null>(null)
+  const [confirmModal, setConfirmModal] = useState<{
+    open: boolean; title: string; message: string; confirmText: string;
+    variant: 'danger' | 'warning'; action: () => Promise<void>
+  }>({ open: false, title: '', message: '', confirmText: '', variant: 'warning', action: async () => {} })
+  const [actionLoading, setActionLoading] = useState(false)
   const logoInputRef = useRef<HTMLInputElement>(null)
   const faviconInputRef = useRef<HTMLInputElement>(null)
 
@@ -188,20 +194,30 @@ function ClientManagement() {
 
   const toggleClientStatus = async (clientId: string, currentStatus: string) => {
     const newStatus = currentStatus === 'active' ? 'inactive' : 'active'
-    setToggling(clientId)
-    try {
-      const res = await fetchWithAuth(`/api/clients/${clientId}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status: newStatus }),
-      })
-      if (res.ok) {
-        toast.success(`Client ${newStatus === 'active' ? 'activated' : 'deactivated'}`)
-        fetchClients()
-      } else {
-        const data = await res.json()
-        toast.error(data.message || 'Failed')
-      }
-    } catch { toast.error('Something went wrong') } finally { setToggling(null) }
+    const client = clients.find(c => c._id === clientId)
+    setConfirmModal({
+      open: true,
+      title: newStatus === 'inactive' ? 'Deactivate Client' : 'Activate Client',
+      message: `Are you sure you want to ${newStatus === 'inactive' ? 'deactivate' : 'activate'} "${client?.name}"? ${newStatus === 'inactive' ? 'All users under this client will also be deactivated.' : 'All users will regain access.'}`,
+      confirmText: newStatus === 'inactive' ? 'Deactivate' : 'Activate',
+      variant: 'warning',
+      action: async () => {
+        const res = await fetchWithAuth(`/api/clients/${clientId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status: newStatus }),
+        })
+        if (res.ok) { toast.success(`Client ${newStatus === 'active' ? 'activated' : 'deactivated'}`); fetchClients() }
+        else { const data = await res.json(); toast.error(data.message || 'Failed') }
+      },
+    })
+  }
+
+  const handleConfirmAction = async () => {
+    setActionLoading(true)
+    try { await confirmModal.action() } finally {
+      setActionLoading(false)
+      setConfirmModal(prev => ({ ...prev, open: false }))
+    }
   }
 
   const copyCredentials = () => {
@@ -444,6 +460,18 @@ function ClientManagement() {
           </div>
         </div>
       )}
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        open={confirmModal.open}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        variant={confirmModal.variant}
+        loading={actionLoading}
+        onConfirm={handleConfirmAction}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, open: false }))}
+      />
     </div>
   )
 }
