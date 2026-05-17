@@ -103,7 +103,19 @@
   }
   .nav-item[title]:hover::after {
     content: attr(title);
-    @apply absolute left-full ml-2 px-2 py-1 text-xs font-medium text-white bg-gray-900 dark:bg-gray-700 rounded-md whitespace-nowrap z-50;
+    position: fixed;
+    left: 72px;
+    transform: translateY(-50%);
+    top: auto;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    color: white;
+    background: #1f2937;
+    border-radius: 6px;
+    white-space: nowrap;
+    z-index: 9999;
+    pointer-events: none;
   }
   .nav-item-active {
     @apply bg-primary/10 dark:bg-primary/15 text-primary font-semibold;

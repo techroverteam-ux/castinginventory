@@ -36,13 +36,40 @@ function WhatsappRequestsContent() {
   const [requests, setRequests] = useState<WhatsappRequest[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  const fetchRequests = () => {
+    setLoading(true)
     fetchWithAuth('/api/whatsapp-config/all')
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d?.configs) setRequests(d.configs) })
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [])
+  }
+
+  useEffect(() => { fetchRequests() }, [])
+
+  const handleFieldUpdate = async (configId: string, field: string, value: string) => {
+    try {
+      const res = await fetchWithAuth(`/api/whatsapp-config/${configId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ [field]: value }),
+      })
+      if (res.ok) toast.success(`${field} updated`)
+      else toast.error('Update failed')
+    } catch { toast.error('Failed') }
+  }
+
+  const handleToggleEnabled = async (configId: string, currentEnabled: boolean) => {
+    try {
+      const res = await fetchWithAuth(`/api/whatsapp-config/${configId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ enabled: !currentEnabled }),
+      })
+      if (res.ok) {
+        toast.success(currentEnabled ? 'Disabled' : 'Enabled')
+        fetchRequests()
+      } else toast.error('Failed')
+    } catch { toast.error('Failed') }
+  }
 
   const getStatus = (r: WhatsappRequest) => {
     if (r.enabled && r.wabaId && r.phoneNumberId && r.accessToken) return 'active'
@@ -169,14 +196,35 @@ function WhatsappRequestsContent() {
                   </div>
                 </div>
 
-                {/* Technical Config Status */}
+                {/* Technical Config - Editable by Superadmin */}
                 <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700/50">
-                  <div className="flex flex-wrap items-center gap-4 text-xs">
-                    <span className="text-gray-500">WABA ID: <span className={r.wabaId ? 'text-green-600 font-medium' : 'text-red-500'}>{r.wabaId ? '✓ Configured' : '✗ Not set'}</span></span>
-                    <span className="text-gray-500">Phone ID: <span className={r.phoneNumberId ? 'text-green-600 font-medium' : 'text-red-500'}>{r.phoneNumberId ? '✓ Configured' : '✗ Not set'}</span></span>
-                    <span className="text-gray-500">Token: <span className={r.accessToken ? 'text-green-600 font-medium' : 'text-red-500'}>{r.accessToken ? '✓ Configured' : '✗ Not set'}</span></span>
-                    <span className="text-gray-500">Template: <span className={r.templateName ? 'text-green-600 font-medium' : 'text-red-500'}>{r.templateName || '✗ Not set'}</span></span>
-                    <span className="ml-auto text-gray-400">Updated: {formatDate(r.updatedAt || r.createdAt)}</span>
+                  <p className="text-[10px] text-gray-500 uppercase font-semibold tracking-wider mb-3">WhatsApp API Configuration</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] text-gray-500 font-medium">WABA ID</label>
+                      <input className="form-input text-xs mt-0.5" defaultValue={r.wabaId || ''} placeholder="Enter WABA ID" data-id={r._id} data-field="wabaId" onBlur={e => handleFieldUpdate(r._id, 'wabaId', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-gray-500 font-medium">Phone Number ID</label>
+                      <input className="form-input text-xs mt-0.5" defaultValue={r.phoneNumberId || ''} placeholder="Enter Phone Number ID" onBlur={e => handleFieldUpdate(r._id, 'phoneNumberId', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-gray-500 font-medium">Access Token</label>
+                      <input type="password" className="form-input text-xs mt-0.5" defaultValue={r.accessToken || ''} placeholder="Enter Access Token" onBlur={e => handleFieldUpdate(r._id, 'accessToken', e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-gray-500 font-medium">Template Name</label>
+                      <input className="form-input text-xs mt-0.5" defaultValue={r.templateName || ''} placeholder="e.g. entry_notification" onBlur={e => handleFieldUpdate(r._id, 'templateName', e.target.value)} />
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between mt-3">
+                    <div className="flex items-center gap-2">
+                      <label className="text-[10px] text-gray-500 font-medium">Enabled:</label>
+                      <button onClick={() => handleToggleEnabled(r._id, r.enabled)} className={`px-3 py-1 text-xs font-medium rounded-lg transition-colors ${r.enabled ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        {r.enabled ? 'Active' : 'Inactive'}
+                      </button>
+                    </div>
+                    <span className="text-[10px] text-gray-400">Updated: {formatDate(r.updatedAt || r.createdAt)}</span>
                   </div>
                 </div>
               </div>

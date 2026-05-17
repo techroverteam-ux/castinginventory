@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
 
   const entryFilter: any = { ...clientFilter, status: 'active', date: { $gte: startDate, $lt: endDate } }
 
-  const [periodEntries, periodAmountAgg, paymentWise, totalParties, totalProducts, recentEntries] = await Promise.all([
+  const [periodEntries, periodAmountAgg, paymentWise, totalParties, totalProducts, totalClients, recentEntries] = await Promise.all([
     Entry.countDocuments(entryFilter),
     Entry.aggregate([{ $match: entryFilter }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
     Entry.aggregate([
@@ -60,12 +60,14 @@ export async function GET(request: NextRequest) {
     ]),
     Party.countDocuments({ ...clientFilter, status: 'active' }),
     Product.countDocuments({ ...clientFilter, status: 'active' }),
+    auth.role === 'superadmin' ? Client.countDocuments({ status: 'active' }) : Promise.resolve(0),
     Entry.find({ ...clientFilter, status: 'active' })
       .populate('partyId', 'name')
       .populate('productId', 'name')
       .populate('paymentModeId', 'name')
+      .populate('clientId', 'name')
       .sort({ createdAt: -1 })
-      .limit(5),
+      .limit(10),
   ])
 
   return NextResponse.json({
@@ -75,6 +77,7 @@ export async function GET(request: NextRequest) {
     todayAmount: periodAmountAgg[0]?.total || 0,
     totalParties,
     totalProducts,
+    totalClients,
     paymentWise: paymentWise.map(p => ({ mode: p._id || 'Unknown', amount: p.amount, count: p.count })),
     recentEntries,
   })
