@@ -28,7 +28,7 @@ const navigation: NavItem[] = [
   { name: 'Party Ledger', href: '/dashboard/party-ledger', icon: FileText, roles: ['superadmin', 'admin', 'manager', 'viewer'] },
   { name: 'Payment Modes', href: '/dashboard/payment-modes', icon: CreditCard, roles: ['superadmin', 'admin'] },
   { name: 'Clients', href: '/dashboard/clients', icon: Building2, roles: ['superadmin'] },
-  { name: 'WhatsApp Config', href: '/dashboard/settings', icon: MessageSquare, roles: ['superadmin'] },
+  { name: 'WhatsApp Requests', href: '/dashboard/whatsapp-requests', icon: MessageSquare, roles: ['superadmin'] },
   { name: 'User Management', href: '/dashboard/admin', icon: Users, roles: ['superadmin', 'admin'] },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings, roles: ['superadmin', 'admin'] },
 ]
