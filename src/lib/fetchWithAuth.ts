@@ -1,10 +1,17 @@
+// URLs that should NOT have clientId appended (they're not tenant-scoped)
+const SKIP_CLIENT_URLS = ['/api/clients', '/api/auth/', '/api/upload', '/api/whatsapp-config/all', '/api/admin/users']
+
 export async function fetchWithAuth(url: string, options: RequestInit = {}) {
-  // For superadmin, append selected clientId if one is chosen (not 'all')
   let finalUrl = url
+
+  // For superadmin, append selected clientId only for tenant-scoped APIs
   const savedClient = localStorage.getItem('sa-selected-client')
   if (savedClient && savedClient !== 'all' && !url.includes('clientId=')) {
-    const separator = url.includes('?') ? '&' : '?'
-    finalUrl = `${url}${separator}clientId=${savedClient}`
+    const shouldSkip = SKIP_CLIENT_URLS.some(skip => url.startsWith(skip))
+    if (!shouldSkip) {
+      const separator = url.includes('?') ? '&' : '?'
+      finalUrl = `${url}${separator}clientId=${savedClient}`
+    }
   }
 
   const res = await fetch(finalUrl, {
