@@ -73,7 +73,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const { theme, toggleTheme } = useTheme()
-  const { user } = useCurrentUser()
+  const { user, loading: userLoading } = useCurrentUser()
 
   const userRole: UserRole = user?.role || 'viewer'
   const userName = user?.name || ''
@@ -84,11 +84,19 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
     }
   }, [user, pathname, router])
 
-  // Restore collapsed state
   useEffect(() => {
     const saved = localStorage.getItem('sidebar-collapsed')
     if (saved === 'true') setCollapsed(true)
   }, [])
+
+  // Show loading until user is fetched
+  if (userLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    )
+  }
 
   const toggleCollapse = () => {
     const next = !collapsed

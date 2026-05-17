@@ -1,28 +1,33 @@
-// URLs that should NOT have clientId appended (they're not tenant-scoped)
 const SKIP_CLIENT_URLS = ['/api/clients', '/api/auth/', '/api/upload', '/api/whatsapp-config/all', '/api/admin/users']
 
 export async function fetchWithAuth(url: string, options: RequestInit = {}) {
   let finalUrl = url
 
-  // For superadmin, append selected clientId only for tenant-scoped APIs
-  const savedClient = localStorage.getItem('sa-selected-client')
-  if (savedClient && savedClient !== 'all' && !url.includes('clientId=')) {
-    const shouldSkip = SKIP_CLIENT_URLS.some(skip => url.startsWith(skip))
-    if (!shouldSkip) {
-      const separator = url.includes('?') ? '&' : '?'
-      finalUrl = `${url}${separator}clientId=${savedClient}`
+  // Only append clientId if we're in browser and have a saved selection that's not 'all'
+  if (typeof window !== 'undefined') {
+    const savedClient = localStorage.getItem('sa-selected-client')
+    if (savedClient && savedClient !== 'all' && !url.includes('clientId=')) {
+      const shouldSkip = SKIP_CLIENT_URLS.some(skip => url.startsWith(skip))
+      if (!shouldSkip) {
+        const separator = url.includes('?') ? '&' : '?'
+        finalUrl = `${url}${separator}clientId=${savedClient}`
+      }
     }
+  }
+
+  const headers: Record<string, string> = {}
+  // Don't set Content-Type for FormData (upload)
+  if (!(options.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json'
   }
 
   const res = await fetch(finalUrl, {
     ...options,
     credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
+    headers: { ...headers, ...options.headers as Record<string, string> },
   })
-  if (res.status === 401) {
+
+  if (res.status === 401 && typeof window !== 'undefined') {
     window.location.href = '/auth/signin'
     throw new Error('Unauthorized')
   }
