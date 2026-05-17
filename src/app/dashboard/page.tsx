@@ -1,6 +1,6 @@
 'use client'
-import { useEffect, useState } from 'react'
-import { BookOpen, UserCheck, ShoppingBag, CreditCard, TrendingUp, RefreshCw, ArrowRight, Calendar } from 'lucide-react'
+import { useEffect, useState, useRef } from 'react'
+import { BookOpen, UserCheck, ShoppingBag, CreditCard, TrendingUp, RefreshCw, ArrowRight, Calendar, Clock } from 'lucide-react'
 import Link from 'next/link'
 import { useCurrentUser } from '@/components/CurrentUserProvider'
 import { fetchWithAuth } from '@/lib/fetchWithAuth'
@@ -24,7 +24,14 @@ export default function Dashboard() {
   const [period, setPeriod] = useState<Period>('today')
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
+  const [currentTime, setCurrentTime] = useState<Date | null>(null)
   const { user } = useCurrentUser()
+
+  useEffect(() => {
+    setCurrentTime(new Date())
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000)
+    return () => clearInterval(timer)
+  }, [])
 
   const fetchStats = async () => {
     setLoading(true)
@@ -58,9 +65,20 @@ export default function Dashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="page-title">Dashboard</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-            {user?.clientName ? `${user.clientName} · ` : ''}Welcome, {user?.name}
-          </p>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              {user?.clientName ? `${user.clientName} · ` : ''}Welcome, {user?.name}
+            </span>
+            {currentTime && (
+              <>
+                <span className="text-gray-300 dark:text-gray-600 hidden sm:inline">·</span>
+                <span className="text-sm font-mono text-primary flex items-center gap-1">
+                  <Clock className="h-3.5 w-3.5" />
+                  {currentTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+                </span>
+              </>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex bg-gray-100 dark:bg-gray-800 rounded-xl p-1 gap-0.5">
