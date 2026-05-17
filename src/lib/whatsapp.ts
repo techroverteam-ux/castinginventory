@@ -37,6 +37,12 @@ export async function sendWhatsAppText({ clientId, phone, message }: SendTextOpt
     const to = normalizeIndiaMobile(phone)
     const graphVersion = config.graphVersion || 'v25.0'
 
+    // If template is configured, use template message
+    if (config.templateName) {
+      return await sendWithTemplate(config, to, message)
+    }
+
+    // Otherwise send plain text
     const res = await fetch(
       `https://graph.facebook.com/${graphVersion}/${config.phoneNumberId}/messages`,
       {
@@ -56,13 +62,83 @@ export async function sendWhatsAppText({ clientId, phone, message }: SendTextOpt
 
     const data = await res.json().catch(() => ({}))
     if (!res.ok) {
+      console.error('WhatsApp send failed:', JSON.stringify(data))
       return { success: false, error: data?.error?.message || `HTTP ${res.status}` }
     }
 
     return { success: true, messageId: data?.messages?.[0]?.id }
   } catch (error: any) {
+    console.error('WhatsApp error:', error)
     return { success: false, error: error.message }
   }
+}
+
+async function sendWithTemplate(config: any, to: string, message: string): Promise<SendResult> {
+  const graphVersion = config.graphVersion || 'v25.0'
+  const languages = [config.templateLanguage || 'en', 'en_US', 'en']
+
+  for (const langCode of languages) {
+    const templatePayload = {
+      messaging_product: 'whatsapp',
+      to,
+      type: 'template',
+      template: {
+        name: config.templateName,
+        language: { code: langCode },
+        components: [
+          {
+            type: 'body',
+            parameters: [
+              { type: 'text', text: message }
+            ]
+          }
+        ]
+      }
+    }
+
+    const res = await fetch(
+      `https://graph.facebook.com/${graphVersion}/${config.phoneNumberId}/messages`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${config.accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(templatePayload),
+      }
+    )
+
+    const data = await res.json().catch(() => ({}))
+    if (res.ok) {
+      return { success: true, messageId: data?.messages?.[0]?.id }
+    }
+
+    console.error(`Template ${langCode} failed:`, JSON.stringify(data))
+  }
+
+  // Template failed, fallback to plain text
+  const res = await fetch(
+    `https://graph.facebook.com/${graphVersion}/${config.phoneNumberId}/messages`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${config.accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        to,
+        type: 'text',
+        text: { preview_url: false, body: message },
+      }),
+    }
+  )
+
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    return { success: false, error: data?.error?.message || 'Template and text both failed' }
+  }
+  return { success: true, messageId: data?.messages?.[0]?.id }
 }
 
 export function formatEntryNotification(entry: {
@@ -88,7 +164,7 @@ PRODUCT   : ${entry.productName}
 PCS       : ${entry.pcs}
 RATE      : ${entry.rate.toFixed(2)}
 AMOUNT    : ${entry.amount.toFixed(2)}
-${entry.remarks ? `REMARK    : ${entry.remarks}` : ''}
+${entry.remarks ? `REMARK    : ${entry.remarks}\n` : ''}
 NET BALANCE : ${entry.netBalance.toFixed(2)} ${entry.netBalanceType}
 FROM : ${entry.businessName}`
 }
