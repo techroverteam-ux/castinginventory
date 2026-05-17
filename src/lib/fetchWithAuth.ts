@@ -1,13 +1,10 @@
 export async function fetchWithAuth(url: string, options: RequestInit = {}) {
-  // For superadmin, auto-append clientId from localStorage selection
+  // For superadmin, append selected clientId if one is chosen (not 'all')
   let finalUrl = url
   const savedClient = localStorage.getItem('sa-selected-client')
-  if (savedClient) {
+  if (savedClient && savedClient !== 'all' && !url.includes('clientId=')) {
     const separator = url.includes('?') ? '&' : '?'
-    // Only append if not already present
-    if (!url.includes('clientId=')) {
-      finalUrl = `${url}${separator}clientId=${savedClient}`
-    }
+    finalUrl = `${url}${separator}clientId=${savedClient}`
   }
 
   const res = await fetch(finalUrl, {

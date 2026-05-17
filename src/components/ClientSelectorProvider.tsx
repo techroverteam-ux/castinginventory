@@ -22,25 +22,19 @@ const ClientContext = createContext<ClientContextValue>({
 export function ClientSelectorProvider({ children }: { children: React.ReactNode }) {
   const { user } = useCurrentUser()
   const [clients, setClients] = useState<ClientOption[]>([])
-  const [selectedClientId, setSelectedClientId] = useState('')
+  const [selectedClientId, setSelectedClientId] = useState('all')
 
   const isSuperadmin = user?.role === 'superadmin'
 
   useEffect(() => {
     if (!isSuperadmin) return
-    // Fetch all clients for superadmin
     fetchWithAuth('/api/clients?limit=100')
       .then(r => r.ok ? r.json() : null)
       .then(d => {
         if (d?.clients) {
           setClients(d.clients)
-          // Restore saved selection
           const saved = localStorage.getItem('sa-selected-client')
-          if (saved && d.clients.find((c: any) => c._id === saved)) {
-            setSelectedClientId(saved)
-          } else if (d.clients.length > 0) {
-            setSelectedClientId(d.clients[0]._id)
-          }
+          if (saved) setSelectedClientId(saved)
         }
       })
       .catch(() => {})

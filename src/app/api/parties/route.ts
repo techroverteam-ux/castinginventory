@@ -10,16 +10,16 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url)
   const clientId = auth.role === 'superadmin' ? (searchParams.get('clientId') || null) : auth.clientId
-  if (!clientId) return NextResponse.json({ message: 'Select a client' }, { status: 400 })
 
   const search = searchParams.get('search') || ''
   const accountHead = searchParams.get('accountHead') || ''
 
-  const filter: any = { clientId, status: 'active' }
+  const filter: any = { status: 'active' }
+  if (clientId) filter.clientId = clientId
   if (search) filter.$or = [{ name: { $regex: search, $options: 'i' } }, { code: { $regex: search, $options: 'i' } }]
   if (accountHead) filter.accountHead = accountHead
 
-  const parties = await Party.find(filter).sort({ code: 1 })
+  const parties = await Party.find(filter).populate('clientId', 'name').sort({ code: 1 })
   return NextResponse.json({ parties })
 }
 

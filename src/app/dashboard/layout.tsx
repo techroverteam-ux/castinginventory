@@ -54,13 +54,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
 function ClientDropdown() {
   const { selectedClientId, setSelectedClientId, clients, isSuperadmin } = useClientSelector()
-  if (!isSuperadmin || clients.length === 0) return null
+  if (!isSuperadmin) return null
   return (
     <select
-      className="form-select text-xs py-1.5 w-40 bg-gray-100 dark:bg-gray-700 border-0"
+      className="form-select text-xs py-1.5 w-44 bg-gray-100 dark:bg-gray-700 border-0"
       value={selectedClientId}
       onChange={e => setSelectedClientId(e.target.value)}
     >
+      <option value="all">All Clients</option>
       {clients.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
     </select>
   )

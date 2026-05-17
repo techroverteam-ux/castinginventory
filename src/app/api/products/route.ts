@@ -10,9 +10,11 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url)
   const clientId = auth.role === 'superadmin' ? (searchParams.get('clientId') || null) : auth.clientId
-  if (!clientId) return NextResponse.json({ message: 'Select a client' }, { status: 400 })
 
-  const products = await Product.find({ clientId, status: 'active' }).populate('createdBy', 'name').populate('updatedBy', 'name').sort({ code: 1 })
+  const filter: any = { status: 'active' }
+  if (clientId) filter.clientId = clientId
+
+  const products = await Product.find(filter).populate('createdBy', 'name').populate('updatedBy', 'name').populate('clientId', 'name').sort({ code: 1 })
   return NextResponse.json({ products })
 }
 

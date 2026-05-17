@@ -12,7 +12,6 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url)
   const clientId = auth.role === 'superadmin' ? (searchParams.get('clientId') || null) : auth.clientId
-  if (!clientId) return NextResponse.json({ message: 'Select a client' }, { status: 400 })
 
   const page = parseInt(searchParams.get('page') || '1')
   const limit = parseInt(searchParams.get('limit') || '20')
@@ -21,7 +20,8 @@ export async function GET(request: NextRequest) {
   const partyId = searchParams.get('partyId')
   const productId = searchParams.get('productId')
 
-  const filter: any = { clientId, status: 'active' }
+  const filter: any = { status: 'active' }
+  if (clientId) filter.clientId = clientId
   if (from || to) {
     filter.date = {}
     if (from) filter.date.$gte = new Date(from)
@@ -37,6 +37,7 @@ export async function GET(request: NextRequest) {
       .populate('partyId', 'name code')
       .populate('productId', 'name code')
       .populate('paymentModeId', 'name code')
+      .populate('clientId', 'name')
       .populate('createdBy', 'name')
       .sort({ recNo: -1 })
       .skip((page - 1) * limit)

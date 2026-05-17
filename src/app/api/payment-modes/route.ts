@@ -10,13 +10,13 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url)
   const clientId = auth.role === 'superadmin' ? (searchParams.get('clientId') || null) : auth.clientId
-  if (!clientId) return NextResponse.json({ message: 'Select a client' }, { status: 400 })
 
   const all = searchParams.get('all') === 'true'
-  const filter: any = { clientId }
+  const filter: any = {}
+  if (clientId) filter.clientId = clientId
   if (!all) filter.status = 'active'
 
-  const modes = await PaymentMode.find(filter).populate('createdBy', 'name').sort({ code: 1 })
+  const modes = await PaymentMode.find(filter).populate('createdBy', 'name').populate('clientId', 'name').sort({ code: 1 })
   return NextResponse.json({ modes })
 }
 

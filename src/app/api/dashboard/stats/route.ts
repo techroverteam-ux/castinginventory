@@ -14,9 +14,14 @@ export async function GET(request: NextRequest) {
   const period = searchParams.get('period') || 'today'
   const customFrom = searchParams.get('from')
   const customTo = searchParams.get('to')
+  const clientIdParam = searchParams.get('clientId')
 
   const clientFilter: any = {}
-  if (auth.role !== 'superadmin') clientFilter.clientId = auth.clientId
+  if (auth.role !== 'superadmin') {
+    clientFilter.clientId = auth.clientId
+  } else if (clientIdParam && clientIdParam !== 'all') {
+    clientFilter.clientId = clientIdParam
+  }
 
   // Calculate date range
   const now = new Date()
