@@ -124,9 +124,9 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   const SidebarContent = ({ onNavClick }: { onNavClick?: () => void }) => (
     <div className="flex flex-col h-full">
       {/* Logo */}
-      <div className={`flex items-center ${collapsed ? 'justify-center px-2' : 'px-5'} pt-6 pb-5 flex-shrink-0`}>
+      <div className={`flex items-center ${collapsed ? 'justify-center px-2' : 'px-4'} pt-4 pb-4 flex-shrink-0`}>
         {user?.clientLogo ? (
-          <img src={user.clientLogo} alt="Logo" className={`${collapsed ? 'h-8 w-8 rounded-lg object-cover' : 'h-10 w-auto max-w-[180px] object-contain'}`} />
+          <img src={user.clientLogo} alt="Logo" className={`${collapsed ? 'h-10 w-10 rounded-lg object-cover' : 'h-[100px] w-[100px] object-contain mx-auto'}`} />
         ) : (
           <div className={`flex items-center ${collapsed ? '' : 'gap-3'}`}>
             <div className="w-9 h-9 bg-brand-gradient rounded-xl flex items-center justify-center shadow-brand flex-shrink-0">
