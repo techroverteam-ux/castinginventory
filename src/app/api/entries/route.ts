@@ -6,7 +6,9 @@ import Product from '@/models/Product'
 import PaymentMode from '@/models/PaymentMode'
 import Client from '@/models/Client'
 import User from '@/models/User'
+import WhatsappConfig from '@/models/WhatsappConfig'
 import { requireRole, isErrorResponse } from '@/lib/auth'
+import { sendWhatsAppText, formatEntryNotification } from '@/lib/whatsapp'
 
 export async function GET(request: NextRequest) {
   const auth = requireRole(request, ['superadmin', 'admin', 'manager', 'viewer'])
@@ -126,10 +128,45 @@ export async function POST(request: NextRequest) {
     createdBy: auth.userId,
   })
 
+  // Send WhatsApp notification (non-blocking)
+  const paymentMode = await PaymentMode.findById(paymentModeId)
+  sendEntryWhatsApp(clientId, entry, party, product, paymentMode?.name || 'CASH')
+
   return NextResponse.json({
     message: 'Entry saved',
     entry,
     netBalance: party.currentBalance,
     netBalanceType: party.currentBalanceType,
   }, { status: 201 })
+}
+
+// Send WhatsApp notification in background (don't block response)
+async function sendEntryWhatsApp(clientId: string, entry: any, party: any, product: any, paymentModeName: string) {
+  try {
+    if (!party.phone) return
+    const config = await WhatsappConfig.findOne({ clientId })
+    if (!config?.enabled) return
+
+    const message = formatEntryNotification({
+      recNo: entry.recNo,
+      date: new Date(entry.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }),
+      paymentMode: paymentModeName,
+      partyName: party.name,
+      productName: product.name,
+      pcs: entry.pcs,
+      rate: entry.rate,
+      amount: entry.amount,
+      remarks: entry.remarks,
+      netBalance: party.currentBalance,
+      netBalanceType: party.currentBalanceType,
+      businessName: config.businessName || 'Casting Inventory',
+    })
+
+    const result = await sendWhatsAppText({ clientId, phone: party.phone, message })
+    if (result.success) {
+      await Entry.findByIdAndUpdate(entry._id, { whatsappSent: true })
+    }
+  } catch (err) {
+    console.error('WhatsApp notification error:', err)
+  }
 }
