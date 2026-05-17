@@ -25,4 +25,4 @@ const UserSchema = new mongoose.Schema({
 UserSchema.index({ role: 1, status: 1 })
 UserSchema.index({ clientId: 1 })
 
-export default mongoose.models.User || mongoose.model('User', UserSchema)
+export default mongoose.models.User || mongoose.model('User', UserSchema, 'cast_users')

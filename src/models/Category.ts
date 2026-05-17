@@ -10,4 +10,4 @@ const CategorySchema = new mongoose.Schema({
 
 CategorySchema.index({ clientId: 1, status: 1 })
 
-export default mongoose.models.Category || mongoose.model('Category', CategorySchema)
+export default mongoose.models.Category || mongoose.model('Category', CategorySchema, 'cast_categories')

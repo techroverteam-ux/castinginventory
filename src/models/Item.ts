@@ -22,4 +22,4 @@ ItemSchema.index({ clientId: 1, categoryId: 1 })
 ItemSchema.index({ sku: 1, clientId: 1 }, { unique: true })
 ItemSchema.index({ status: 1 })
 
-export default mongoose.models.Item || mongoose.model('Item', ItemSchema)
+export default mongoose.models.Item || mongoose.model('Item', ItemSchema, 'cast_items')

@@ -37,7 +37,7 @@ const UserSchema = new mongoose.Schema({
   status: { type: String, enum: ['active', 'inactive'], default: 'active' },
 }, { timestamps: true })
 
-const User = mongoose.models.User || mongoose.model('User', UserSchema)
+const User = mongoose.models.User || mongoose.model('User', UserSchema, 'cast_users')
 
 async function createSuperAdmin() {
   try {

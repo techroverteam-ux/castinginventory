@@ -14,4 +14,4 @@ const ClientSchema = new mongoose.Schema({
 ClientSchema.index({ slug: 1 })
 ClientSchema.index({ status: 1 })
 
-export default mongoose.models.Client || mongoose.model('Client', ClientSchema)
+export default mongoose.models.Client || mongoose.model('Client', ClientSchema, 'cast_clients')

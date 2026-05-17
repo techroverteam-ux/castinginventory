@@ -2,13 +2,7 @@
 import { useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { useTheme } from '@/components/ThemeProvider'
-import { Moon, Sun, Eye, EyeOff, ArrowRight, Shield, Package, BarChart3, Loader2 } from 'lucide-react'
-
-const features = [
-  { icon: Shield, label: 'Role-based access', desc: 'Superadmin, Admin, Manager, Viewer' },
-  { icon: Package, label: 'Multi-client support', desc: 'Manage multiple client inventories' },
-  { icon: BarChart3, label: 'Real-time tracking', desc: 'Live stock & category insights' },
-]
+import { Moon, Sun, Eye, EyeOff, ArrowRight, Package, Loader2 } from 'lucide-react'
 
 export default function SignIn() {
   const [formData, setFormData] = useState({ email: '', password: '' })
@@ -63,149 +57,108 @@ export default function SignIn() {
     }`
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left Panel */}
-      <div className="hidden lg:flex lg:w-[460px] xl:w-[500px] relative bg-gradient-to-br from-[#1E1B4B] via-[#312E81] to-[#4338CA] flex-col justify-between p-10 overflow-hidden">
-        <div className="absolute top-0 right-0 w-72 h-72 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+      {/* Theme toggle - top right */}
+      <div className="fixed top-4 right-4 z-10">
+        <button
+          onClick={toggleTheme}
+          className="p-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shadow-sm"
+          aria-label="Toggle theme"
+        >
+          {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+        </button>
+      </div>
 
-        <div className="relative z-10">
-          <div className="flex items-center gap-3">
+      {/* Login Card */}
+      <div className="w-full max-w-[420px] mx-4">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-elegant border border-gray-200/80 dark:border-gray-700/60 p-6 sm:p-8">
+          {/* Logo */}
+          <div className="flex items-center justify-center gap-3 mb-8">
             <div className="w-10 h-10 bg-brand-gradient rounded-xl flex items-center justify-center shadow-brand">
               <Package className="h-5 w-5 text-white" />
             </div>
-            <span className="text-white font-display text-xl font-bold tracking-tight">Casting Inventory</span>
+            <span className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Casting Inventory</span>
           </div>
-          <p className="text-white/40 text-sm mt-2">Multi-Client Inventory Management</p>
-        </div>
 
-        <div className="relative z-10 space-y-8">
-          <div>
-            <h2 className="text-white text-3xl font-bold leading-tight mb-3">
-              Manage your<br />
-              <span className="bg-brand-gradient bg-clip-text text-transparent">casting inventory</span><br />
-              with precision.
-            </h2>
-            <p className="text-white/50 text-sm leading-relaxed max-w-xs">
-              Track stock levels, manage categories, and serve multiple clients — all from one dashboard.
+          {/* Heading */}
+          <div className="text-center mb-6">
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+              Sign in to your account
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+              Enter your credentials to continue
             </p>
           </div>
-          <div className="space-y-4">
-            {features.map(({ icon: Icon, label, desc }) => (
-              <div key={label} className="flex items-start gap-3 group">
-                <div className="w-9 h-9 rounded-lg bg-white/[0.06] border border-white/[0.08] flex items-center justify-center flex-shrink-0 group-hover:bg-white/[0.1] transition-colors">
-                  <Icon className="h-4 w-4 text-primary" />
-                </div>
-                <div>
-                  <p className="text-white/80 text-sm font-medium">{label}</p>
-                  <p className="text-white/35 text-xs">{desc}</p>
-                </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Email address
+              </label>
+              <div className={fieldClass('email')}>
+                <input
+                  type="email"
+                  className="w-full px-4 py-3 bg-transparent text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none text-sm rounded-xl"
+                  placeholder="name@company.com"
+                  value={formData.email}
+                  onChange={(e) => { setFormData({ ...formData, email: e.target.value }); if (errors.email) setErrors(prev => ({ ...prev, email: undefined })) }}
+                  onFocus={() => setFocusedField('email')}
+                  onBlur={() => setFocusedField(null)}
+                />
               </div>
-            ))}
-          </div>
-        </div>
-
-        <p className="relative z-10 text-white/25 text-xs">&copy; 2026 Casting Inventory. All rights reserved.</p>
-      </div>
-
-      {/* Right Panel */}
-      <div className="flex-1 flex flex-col bg-white dark:bg-gray-900 transition-colors duration-300">
-        {/* Top bar */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
-          <div className="flex items-center gap-3 lg:hidden">
-            <div className="w-8 h-8 bg-brand-gradient rounded-lg flex items-center justify-center">
-              <Package className="h-4 w-4 text-white" />
+              {errors.email && <p className="text-danger text-xs mt-1.5">{errors.email}</p>}
             </div>
-            <span className="font-bold text-gray-900 dark:text-white">Casting Inventory</span>
-          </div>
-          <div className="lg:ml-auto flex items-center gap-2">
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                Password
+              </label>
+              <div className={fieldClass('password')}>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  className="w-full px-4 py-3 pr-11 bg-transparent text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none text-sm rounded-xl"
+                  placeholder="Enter your password"
+                  value={formData.password}
+                  onChange={(e) => { setFormData({ ...formData, password: e.target.value }); if (errors.password) setErrors(prev => ({ ...prev, password: undefined })) }}
+                  onFocus={() => setFocusedField('password')}
+                  onBlur={() => setFocusedField(null)}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {errors.password && <p className="text-danger text-xs mt-1.5">{errors.password}</p>}
+            </div>
+
             <button
-              onClick={toggleTheme}
-              className="p-2 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-              aria-label="Toggle theme"
+              type="submit"
+              disabled={loading}
+              className="w-full bg-brand-gradient text-white font-semibold py-3.5 px-6 rounded-xl shadow-brand hover:brightness-110 active:scale-[0.98] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 group text-sm"
             >
-              {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Signing in...</span>
+                </>
+              ) : (
+                <>
+                  <span>Sign In</span>
+                  <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+                </>
+              )}
             </button>
-          </div>
+          </form>
         </div>
 
-        {/* Form */}
-        <div className="flex-1 flex items-center justify-center px-6 sm:px-10 lg:px-14 py-10">
-          <div className="w-full max-w-[400px]">
-            <div className="mb-8">
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
-                Welcome back
-              </h1>
-              <p className="text-gray-500 dark:text-gray-400 text-sm mt-1.5">
-                Sign in to your account to continue
-              </p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                  Email address
-                </label>
-                <div className={fieldClass('email')}>
-                  <input
-                    type="email"
-                    className="w-full px-4 py-3 bg-transparent text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none text-sm rounded-xl"
-                    placeholder="name@company.com"
-                    value={formData.email}
-                    onChange={(e) => { setFormData({ ...formData, email: e.target.value }); if (errors.email) setErrors(prev => ({ ...prev, email: undefined })) }}
-                    onFocus={() => setFocusedField('email')}
-                    onBlur={() => setFocusedField(null)}
-                  />
-                </div>
-                {errors.email && <p className="text-danger text-xs mt-1.5">{errors.email}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                  Password
-                </label>
-                <div className={fieldClass('password')}>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    className="w-full px-4 py-3 pr-11 bg-transparent text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none text-sm rounded-xl"
-                    placeholder="Enter your password"
-                    value={formData.password}
-                    onChange={(e) => { setFormData({ ...formData, password: e.target.value }); if (errors.password) setErrors(prev => ({ ...prev, password: undefined })) }}
-                    onFocus={() => setFocusedField('password')}
-                    onBlur={() => setFocusedField(null)}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                    tabIndex={-1}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-                {errors.password && <p className="text-danger text-xs mt-1.5">{errors.password}</p>}
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-brand-gradient text-white font-semibold py-3.5 px-6 rounded-xl shadow-brand hover:brightness-110 active:scale-[0.98] transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 group text-sm mt-2"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Signing in...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Sign In</span>
-                    <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
-                  </>
-                )}
-              </button>
-            </form>
-          </div>
-        </div>
+        <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-4">
+          &copy; 2026 Casting Inventory. All rights reserved.
+        </p>
       </div>
     </div>
   )
