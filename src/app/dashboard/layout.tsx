@@ -229,6 +229,13 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
             <button onClick={toggleTheme} className="p-2 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors" aria-label="Toggle theme">
               {theme === 'light' ? <Moon className="h-4 w-4 text-gray-600" /> : <Sun className="h-4 w-4 text-gray-300" />}
             </button>
+            <button
+              onClick={handleLogout}
+              className="p-2 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-red-50 dark:hover:bg-red-900/10 text-gray-500 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+              title="Sign Out"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
           </div>
         </header>
 
