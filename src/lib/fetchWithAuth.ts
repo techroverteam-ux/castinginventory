@@ -3,10 +3,12 @@ const SKIP_CLIENT_URLS = ['/api/clients', '/api/auth/', '/api/upload', '/api/wha
 export async function fetchWithAuth(url: string, options: RequestInit = {}) {
   let finalUrl = url
 
-  // Only append clientId if we're in browser and have a saved selection that's not 'all'
   if (typeof window !== 'undefined') {
+    // Only append clientId if user is superadmin (check stored role)
+    const userRole = sessionStorage.getItem('ci-user-role')
     const savedClient = localStorage.getItem('sa-selected-client')
-    if (savedClient && savedClient !== 'all' && !url.includes('clientId=')) {
+
+    if (userRole === 'superadmin' && savedClient && savedClient !== 'all' && !url.includes('clientId=')) {
       const shouldSkip = SKIP_CLIENT_URLS.some(skip => url.startsWith(skip))
       if (!shouldSkip) {
         const separator = url.includes('?') ? '&' : '?'
@@ -16,7 +18,6 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}) {
   }
 
   const headers: Record<string, string> = {}
-  // Don't set Content-Type for FormData (upload)
   if (!(options.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json'
   }

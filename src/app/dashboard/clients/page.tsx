@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { Plus, Search, Building2, X, Loader2, Upload, Copy, Check, Power } from 'lucide-react'
+import { Plus, Search, Building2, X, Loader2, Upload, Copy, Check, Power, LayoutGrid, List } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { RoleGuard } from '@/components/RoleGuard'
 import { fetchWithAuth } from '@/lib/fetchWithAuth'
@@ -44,6 +44,7 @@ function ClientManagement() {
   const [uploading, setUploading] = useState<'logo' | 'favicon' | null>(null)
   const [copied, setCopied] = useState(false)
   const [toggling, setToggling] = useState<string | null>(null)
+  const [view, setView] = useState<'list' | 'grid'>('list')
   const [confirmModal, setConfirmModal] = useState<{
     open: boolean; title: string; message: string; confirmText: string;
     variant: 'danger' | 'warning'; action: () => Promise<void>
@@ -237,9 +238,15 @@ function ClientManagement() {
           <h1 className="page-title">Client Management</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{total} clients</p>
         </div>
-        <button onClick={() => setShowModal(true)} className="ci-button flex items-center gap-2">
-          <Plus className="h-4 w-4" /> Add Client
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
+            <button onClick={() => setView('list')} className={`p-1.5 rounded-md ${view === 'list' ? 'bg-white dark:bg-gray-700 shadow-sm' : ''}`}><List className="h-4 w-4" /></button>
+            <button onClick={() => setView('grid')} className={`p-1.5 rounded-md ${view === 'grid' ? 'bg-white dark:bg-gray-700 shadow-sm' : ''}`}><LayoutGrid className="h-4 w-4" /></button>
+          </div>
+          <button onClick={() => setShowModal(true)} className="ci-button flex items-center gap-2">
+            <Plus className="h-4 w-4" /> Add Client
+          </button>
+        </div>
       </div>
 
       {/* Search */}
@@ -250,7 +257,55 @@ function ClientManagement() {
         </div>
       </div>
 
-      {/* Grid */}
+      {/* List View */}
+      {view === 'list' && (
+        <div className="ci-card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead className="table-header">
+                <tr>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Client</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Email</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Phone</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Status</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Created</th>
+                  <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  Array.from({ length: 4 }).map((_, i) => (
+                    <tr key={i} className="table-row animate-pulse">{[1,2,3,4,5,6].map(j => <td key={j} className="table-cell"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20" /></td>)}</tr>
+                  ))
+                ) : clients.length === 0 ? (
+                  <tr><td colSpan={6} className="px-4 py-12 text-center text-gray-400"><Building2 className="h-8 w-8 mx-auto mb-2 opacity-40" /><p className="text-sm">No clients yet</p></td></tr>
+                ) : (
+                  clients.map(client => (
+                    <tr key={client._id} className={`table-row ${client.status === 'inactive' ? 'opacity-50' : ''}`}>
+                      <td className="table-cell">
+                        <div className="flex items-center gap-2">
+                          {client.logo ? <img src={client.logo} alt="" className="w-8 h-8 rounded-lg object-cover" /> : <div className="w-8 h-8 bg-purple-50 dark:bg-purple-900/20 rounded-lg flex items-center justify-center"><Building2 className="h-4 w-4 text-purple-600" /></div>}
+                          <span className="font-medium text-gray-900 dark:text-white text-sm">{client.name}</span>
+                        </div>
+                      </td>
+                      <td className="table-cell text-xs">{client.contactEmail}</td>
+                      <td className="table-cell text-xs">{client.contactPhone || '—'}</td>
+                      <td className="table-cell"><span className={`badge ${client.status === 'active' ? 'badge-green' : 'badge-red'}`}>{client.status}</span></td>
+                      <td className="table-cell text-xs text-gray-500">{new Date(client.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                      <td className="table-cell text-right">
+                        <button onClick={() => toggleClientStatus(client._id, client.status)} className={`p-1.5 rounded-lg transition-colors ${client.status === 'active' ? 'text-amber-600 hover:bg-amber-50' : 'text-green-600 hover:bg-green-50'}`}><Power className="h-3.5 w-3.5" /></button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Grid View */}
+      {view === 'grid' && (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {loading ? (
           Array.from({ length: 6 }).map((_, i) => (
@@ -310,6 +365,7 @@ function ClientManagement() {
           ))
         )}
       </div>
+      )}
 
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">

@@ -29,7 +29,15 @@ export function CurrentUserProvider({ children }: { children: React.ReactNode })
   const fetchUser = () => {
     fetchWithAuth('/api/auth/me')
       .then(res => res.ok ? res.json() : null)
-      .then(data => { if (data) setUser(data.user) })
+      .then(data => {
+        if (data) {
+          setUser(data.user)
+          // Store role for fetchWithAuth to check
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('ci-user-role', data.user.role)
+          }
+        }
+      })
       .catch(() => {})
       .finally(() => setLoading(false))
   }

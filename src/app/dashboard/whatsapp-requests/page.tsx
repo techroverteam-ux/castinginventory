@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { MessageSquare, CheckCircle, XCircle, Clock, ExternalLink } from 'lucide-react'
+import { MessageSquare, CheckCircle, XCircle, Clock, ExternalLink, LayoutGrid, List } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { RoleGuard } from '@/components/RoleGuard'
 import { fetchWithAuth } from '@/lib/fetchWithAuth'
@@ -35,6 +35,7 @@ export default function WhatsappRequestsPage() {
 function WhatsappRequestsContent() {
   const [requests, setRequests] = useState<WhatsappRequest[]>([])
   const [loading, setLoading] = useState(true)
+  const [view, setView] = useState<'list' | 'grid'>('list')
 
   const fetchRequests = () => {
     setLoading(true)
@@ -92,6 +93,10 @@ function WhatsappRequestsContent() {
           <h1 className="page-title">WhatsApp Integration Requests</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">All clients&apos; WhatsApp business details for Meta verification</p>
         </div>
+        <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
+          <button onClick={() => setView('list')} className={`p-1.5 rounded-md ${view === 'list' ? 'bg-white dark:bg-gray-700 shadow-sm' : ''}`}><List className="h-4 w-4" /></button>
+          <button onClick={() => setView('grid')} className={`p-1.5 rounded-md ${view === 'grid' ? 'bg-white dark:bg-gray-700 shadow-sm' : ''}`}><LayoutGrid className="h-4 w-4" /></button>
+        </div>
       </div>
 
       {/* Summary Cards */}
@@ -125,7 +130,48 @@ function WhatsappRequestsContent() {
         </div>
       </div>
 
-      {/* Requests List */}
+      {/* List View */}
+      {view === 'list' && (
+        <div className="ci-card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead className="table-header">
+                <tr>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Client</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Business Phone</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">GST</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Phone Number ID</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Template</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Status</th>
+                  <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-600 dark:text-gray-300">Toggle</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  Array.from({ length: 3 }).map((_, i) => <tr key={i} className="table-row animate-pulse">{[1,2,3,4,5,6,7].map(j => <td key={j} className="table-cell"><div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16" /></td>)}</tr>)
+                ) : requests.length === 0 ? (
+                  <tr><td colSpan={7} className="px-4 py-12 text-center text-gray-400"><MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-40" /><p className="text-sm">No requests</p></td></tr>
+                ) : (
+                  requests.map(r => (
+                    <tr key={r._id} className="table-row">
+                      <td className="table-cell font-medium text-gray-900 dark:text-white text-sm">{r.clientId?.name || '—'}</td>
+                      <td className="table-cell text-xs">{r.businessPhone ? `+91 ${r.businessPhone}` : '—'}</td>
+                      <td className="table-cell text-xs font-mono">{r.gstNumber || '—'}</td>
+                      <td className="table-cell text-xs font-mono">{r.phoneNumberId || <span className="text-red-500">✗ Not set</span>}</td>
+                      <td className="table-cell text-xs">{r.templateName || <span className="text-red-500">✗ Not set</span>}</td>
+                      <td className="table-cell"><span className={`badge ${r.enabled ? 'badge-green' : 'badge-red'}`}>{r.enabled ? 'Active' : 'Inactive'}</span></td>
+                      <td className="table-cell"><button onClick={() => handleToggleEnabled(r._id, r.enabled)} className={`px-2 py-1 text-xs rounded-lg ${r.enabled ? 'text-red-600 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}`}>{r.enabled ? 'Disable' : 'Enable'}</button></td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Grid View */}
+      {view === 'grid' && (
       <div className="space-y-4">
         {loading ? (
           Array.from({ length: 3 }).map((_, i) => (
@@ -232,6 +278,7 @@ function WhatsappRequestsContent() {
           })
         )}
       </div>
+      )}
     </div>
   )
 }
