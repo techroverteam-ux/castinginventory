@@ -1,13 +1,26 @@
 'use client'
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
-import { Eye, EyeOff, Package, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, Package, Loader2, ArrowLeft } from 'lucide-react'
+
+type Step = 'credentials' | 'otp'
 
 export default function SignIn() {
+  const [step, setStep] = useState<Step>('credentials')
   const [formData, setFormData] = useState({ email: '', password: '' })
+  const [otp, setOtp] = useState(['', '', '', '', '', ''])
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
+  const [otpError, setOtpError] = useState('')
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([])
+
+  // Auto-focus first OTP input when step changes
+  useEffect(() => {
+    if (step === 'otp') {
+      setTimeout(() => otpRefs.current[0]?.focus(), 100)
+    }
+  }, [step])
 
   const validate = () => {
     const e: typeof errors = {}
@@ -19,7 +32,7 @@ export default function SignIn() {
     return !Object.keys(e).length
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleCredentialsSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!validate()) return
     setLoading(true)
@@ -31,7 +44,10 @@ export default function SignIn() {
         body: JSON.stringify(formData),
       })
       const data = await res.json()
-      if (res.ok) {
+      if (data.requireOtp) {
+        toast.success('OTP sent to your email')
+        setStep('otp')
+      } else if (res.ok) {
         toast.success('Welcome back!')
         window.location.href = '/dashboard'
       } else {
@@ -44,6 +60,78 @@ export default function SignIn() {
     }
   }
 
+  const handleOtpChange = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return
+    const newOtp = [...otp]
+    newOtp[index] = value.slice(-1)
+    setOtp(newOtp)
+    setOtpError('')
+
+    // Auto-focus next input
+    if (value && index < 5) {
+      otpRefs.current[index + 1]?.focus()
+    }
+  }
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus()
+    }
+  }
+
+  const handleOtpPaste = (e: React.ClipboardEvent) => {
+    e.preventDefault()
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
+    if (pasted.length === 6) {
+      setOtp(pasted.split(''))
+      otpRefs.current[5]?.focus()
+    }
+  }
+
+  const handleOtpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const otpValue = otp.join('')
+    if (otpValue.length !== 6) {
+      setOtpError('Please enter the complete 6-digit OTP')
+      return
+    }
+    setLoading(true)
+    setOtpError('')
+    try {
+      const res = await fetch('/api/auth/signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...formData, otp: otpValue }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success('Welcome back!')
+        window.location.href = '/dashboard'
+      } else {
+        setOtpError(data.message || 'Invalid OTP')
+        setOtp(['', '', '', '', '', ''])
+        otpRefs.current[0]?.focus()
+      }
+    } catch {
+      toast.error('Something went wrong')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const resendOtp = async () => {
+    try {
+      await fetch('/api/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email }),
+      })
+      toast.success('OTP resent!')
+    } catch {
+      toast.error('Failed to resend OTP')
+    }
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4" style={{ background: '#fff' }}>
       {/* Logo */}
@@ -51,100 +139,114 @@ export default function SignIn() {
         <Package className="h-6 w-6 text-white" />
       </div>
 
-      {/* Heading */}
-      <h1 className="text-[32px] font-semibold text-[#0d0d0d] mb-2 text-center leading-tight">
-        Welcome back
-      </h1>
-      <p className="text-[15px] text-[#6e6e80] mb-8 text-center">
-        Log in to Casting Inventory
-      </p>
+      {step === 'credentials' ? (
+        <>
+          <h1 className="text-[32px] font-semibold text-[#0d0d0d] mb-2 text-center leading-tight">
+            Welcome back
+          </h1>
+          <p className="text-[15px] text-[#6e6e80] mb-8 text-center">
+            Log in to Casting Inventory
+          </p>
 
-      {/* Form - direct fields, no card */}
-      <form onSubmit={handleSubmit} className="w-full max-w-[340px] space-y-3" noValidate>
-        {/* Email */}
-        <div>
-          <label className="block text-[13px] font-medium text-[#0d0d0d] mb-1.5">
-            Email address *
-          </label>
-          <input
-            type="email"
-            className={`w-full h-[52px] px-4 text-[15px] text-[#0d0d0d] bg-white border rounded-md placeholder-[#8e8ea0] focus:outline-none focus:ring-2 focus:ring-[#4F46E5]/20 focus:border-[#4F46E5] transition-all ${
-              errors.email ? 'border-red-500' : 'border-[#c5c5d2]'
-            }`}
-            placeholder="you@example.com"
-            value={formData.email}
-            onChange={(e) => { setFormData({ ...formData, email: e.target.value }); if (errors.email) setErrors(prev => ({ ...prev, email: undefined })) }}
-          />
-          {errors.email && <p className="text-[#ef4444] text-[12px] mt-1">{errors.email}</p>}
-        </div>
+          <form onSubmit={handleCredentialsSubmit} className="w-full max-w-[340px] space-y-3" noValidate>
+            <div>
+              <label className="block text-[13px] font-medium text-[#0d0d0d] mb-1.5">Email address *</label>
+              <input
+                type="email"
+                className={`w-full h-[52px] px-4 text-[15px] text-[#0d0d0d] bg-white border rounded-md placeholder-[#8e8ea0] focus:outline-none focus:ring-2 focus:ring-[#4F46E5]/20 focus:border-[#4F46E5] transition-all ${errors.email ? 'border-red-500' : 'border-[#c5c5d2]'}`}
+                placeholder="you@example.com"
+                value={formData.email}
+                onChange={(e) => { setFormData({ ...formData, email: e.target.value }); if (errors.email) setErrors(prev => ({ ...prev, email: undefined })) }}
+              />
+              {errors.email && <p className="text-[#ef4444] text-[12px] mt-1">{errors.email}</p>}
+            </div>
 
-        {/* Password */}
-        <div>
-          <label className="block text-[13px] font-medium text-[#0d0d0d] mb-1.5">
-            Password *
-          </label>
-          <div className="relative">
-            <input
-              type={showPassword ? 'text' : 'password'}
-              className={`w-full h-[52px] px-4 pr-12 text-[15px] text-[#0d0d0d] bg-white border rounded-md placeholder-[#8e8ea0] focus:outline-none focus:ring-2 focus:ring-[#4F46E5]/20 focus:border-[#4F46E5] transition-all ${
-                errors.password ? 'border-red-500' : 'border-[#c5c5d2]'
-              }`}
-              placeholder="Enter your password"
-              value={formData.password}
-              onChange={(e) => { setFormData({ ...formData, password: e.target.value }); if (errors.password) setErrors(prev => ({ ...prev, password: undefined })) }}
-            />
+            <div>
+              <label className="block text-[13px] font-medium text-[#0d0d0d] mb-1.5">Password *</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  className={`w-full h-[52px] px-4 pr-12 text-[15px] text-[#0d0d0d] bg-white border rounded-md placeholder-[#8e8ea0] focus:outline-none focus:ring-2 focus:ring-[#4F46E5]/20 focus:border-[#4F46E5] transition-all ${errors.password ? 'border-red-500' : 'border-[#c5c5d2]'}`}
+                  placeholder="Enter your password"
+                  value={formData.password}
+                  onChange={(e) => { setFormData({ ...formData, password: e.target.value }); if (errors.password) setErrors(prev => ({ ...prev, password: undefined })) }}
+                />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#8e8ea0] hover:text-[#0d0d0d] transition-colors" tabIndex={-1}>
+                  {showPassword ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
+                </button>
+              </div>
+              {errors.password && <p className="text-[#ef4444] text-[12px] mt-1">{errors.password}</p>}
+            </div>
+
             <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-[#8e8ea0] hover:text-[#0d0d0d] transition-colors"
-              tabIndex={-1}
+              type="submit"
+              disabled={loading}
+              className="w-full h-[52px] bg-[#4F46E5] hover:bg-[#4338CA] text-white font-medium rounded-md transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-[15px] mt-4"
             >
-              {showPassword ? <EyeOff className="h-[18px] w-[18px]" /> : <Eye className="h-[18px] w-[18px]" />}
+              {loading ? (<><Loader2 className="h-[18px] w-[18px] animate-spin" /> Verifying...</>) : 'Continue'}
             </button>
-          </div>
-          {errors.password && <p className="text-[#ef4444] text-[12px] mt-1">{errors.password}</p>}
-        </div>
+          </form>
+        </>
+      ) : (
+        <>
+          {/* OTP Step */}
+          <h1 className="text-[28px] font-semibold text-[#0d0d0d] mb-2 text-center leading-tight">
+            Enter verification code
+          </h1>
+          <p className="text-[14px] text-[#6e6e80] mb-8 text-center max-w-[320px]">
+            We&apos;ve sent a 6-digit code to <span className="font-medium text-[#0d0d0d]">{formData.email}</span>
+          </p>
 
-        {/* Submit */}
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full h-[52px] bg-[#4F46E5] hover:bg-[#4338CA] text-white font-medium rounded-md transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-[15px] mt-4"
-        >
-          {loading ? (
-            <>
-              <Loader2 className="h-[18px] w-[18px] animate-spin" />
-              Signing in...
-            </>
-          ) : (
-            'Continue'
-          )}
-        </button>
-      </form>
+          <form onSubmit={handleOtpSubmit} className="w-full max-w-[340px]" noValidate>
+            {/* OTP Inputs */}
+            <div className="flex justify-center gap-2.5 mb-4" onPaste={handleOtpPaste}>
+              {otp.map((digit, i) => (
+                <input
+                  key={i}
+                  ref={el => { otpRefs.current[i] = el }}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  className={`w-[48px] h-[56px] text-center text-[22px] font-semibold text-[#0d0d0d] bg-white border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4F46E5]/20 focus:border-[#4F46E5] transition-all ${
+                    otpError ? 'border-red-500' : 'border-[#c5c5d2]'
+                  }`}
+                  value={digit}
+                  onChange={(e) => handleOtpChange(i, e.target.value)}
+                  onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                />
+              ))}
+            </div>
 
-      {/* Divider */}
-      <div className="w-full max-w-[340px] flex items-center gap-3 my-6">
-        <div className="flex-1 h-px bg-[#e5e5e5]" />
-        <span className="text-[12px] text-[#8e8ea0]">OR</span>
-        <div className="flex-1 h-px bg-[#e5e5e5]" />
-      </div>
+            {otpError && <p className="text-[#ef4444] text-[13px] text-center mb-4">{otpError}</p>}
 
-      {/* Google button placeholder */}
-      <button
-        type="button"
-        disabled
-        className="w-full max-w-[340px] h-[52px] flex items-center justify-center gap-3 border border-[#c5c5d2] rounded-md text-[15px] text-[#0d0d0d] font-medium hover:bg-[#f7f7f8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        <svg className="h-5 w-5" viewBox="0 0 24 24">
-          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-        </svg>
-        Continue with Google
-      </button>
+            <button
+              type="submit"
+              disabled={loading || otp.join('').length !== 6}
+              className="w-full h-[52px] bg-[#4F46E5] hover:bg-[#4338CA] text-white font-medium rounded-md transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-[15px]"
+            >
+              {loading ? (<><Loader2 className="h-[18px] w-[18px] animate-spin" /> Verifying...</>) : 'Verify & Sign In'}
+            </button>
 
-      {/* Footer */}
+            <div className="flex items-center justify-between mt-5">
+              <button
+                type="button"
+                onClick={() => { setStep('credentials'); setOtp(['', '', '', '', '', '']); setOtpError('') }}
+                className="flex items-center gap-1.5 text-[13px] text-[#6e6e80] hover:text-[#0d0d0d] transition-colors"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" /> Back
+              </button>
+              <button
+                type="button"
+                onClick={resendOtp}
+                className="text-[13px] text-[#4F46E5] hover:text-[#4338CA] font-medium transition-colors"
+              >
+                Resend code
+              </button>
+            </div>
+          </form>
+        </>
+      )}
+
       <div className="mt-10 text-center">
         <p className="text-[12px] text-[#8e8ea0]">
           By continuing, you agree to our Terms of Service

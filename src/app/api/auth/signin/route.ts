@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Invalid request body' }, { status: 400 })
     }
 
-    const { email, password } = body
+    const { email, password, otp } = body
     if (!email || !password || typeof email !== 'string' || typeof password !== 'string') {
       return NextResponse.json({ message: 'Email and password are required' }, { status: 400 })
     }
@@ -37,6 +37,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Invalid email or password' }, { status: 401 })
     }
 
+    // If OTP not provided, credentials are valid — ask for OTP
+    if (!otp) {
+      return NextResponse.json({
+        message: 'Credentials verified. OTP required.',
+        requireOtp: true,
+        email: normalizedEmail,
+      })
+    }
+
+    // Verify OTP (hardcoded 111111 for now)
+    if (otp !== '111111') {
+      return NextResponse.json({ message: 'Invalid OTP. Please try again.' }, { status: 400 })
+    }
+
+    // OTP verified — issue token
     const token = jwt.sign(
       { userId: user._id, email: user.email, role: user.role, clientId: user.clientId?._id },
       process.env.JWT_SECRET,
